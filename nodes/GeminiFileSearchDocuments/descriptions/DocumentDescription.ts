@@ -328,6 +328,23 @@ export const documentFields: INodeProperties[] = [
     description: 'The Gemini model to use for querying',
   },
   {
+    displayName: 'System Prompt',
+    name: 'systemPrompt',
+    type: 'string',
+    displayOptions: {
+      show: {
+        operation: ['query'],
+      },
+    },
+    typeOptions: {
+      rows: 4,
+    },
+    default: '',
+    description: 'System instructions to provide context and guide the AI model response',
+    placeholder:
+      'You are a helpful research assistant. Answer questions based only on the provided documents.',
+  },
+  {
     displayName: 'Query',
     name: 'query',
     type: 'string',

@@ -40,6 +40,7 @@ interface QueryResponse {
  */
 export async function query(this: IExecuteFunctions, index: number): Promise<QueryResponse> {
   const model = this.getNodeParameter('model', index) as string;
+  const systemPrompt = this.getNodeParameter('systemPrompt', index, '') as string;
   const queryText = this.getNodeParameter('query', index) as string;
   const storeNamesParam = this.getNodeParameter('storeNames', index) as string;
   const metadataFilter = this.getNodeParameter('metadataFilter', index, '') as string;
@@ -50,12 +51,26 @@ export async function query(this: IExecuteFunctions, index: number): Promise<Que
     validateMetadataFilter.call(this, metadataFilter);
   }
 
+  // Build contents array with system prompt if provided
+  const contents: IDataObject[] = [];
+
+  if (systemPrompt && systemPrompt.trim() !== '') {
+    contents.push({
+      role: 'user',
+      parts: [{ text: systemPrompt }],
+    });
+    contents.push({
+      role: 'model',
+      parts: [{ text: 'Understood. I will follow these instructions.' }],
+    });
+  }
+
+  contents.push({
+    parts: [{ text: queryText }],
+  });
+
   const body: IDataObject = {
-    contents: [
-      {
-        parts: [{ text: queryText }],
-      },
-    ],
+    contents,
     tools: [
       {
         fileSearch: {
