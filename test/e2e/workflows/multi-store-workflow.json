@@ -1,0 +1,211 @@
+{
+  "name": "Multi-Store Workflow",
+  "nodes": [
+    {
+      "name": "Create Store A",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [250, 200],
+      "parameters": {
+        "operation": "create",
+        "displayName": "Multi-Store Test A"
+      }
+    },
+    {
+      "name": "Create Store B",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [250, 400],
+      "parameters": {
+        "operation": "create",
+        "displayName": "Multi-Store Test B"
+      }
+    },
+    {
+      "name": "Upload to Store A",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [450, 200],
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$node['Create Store A'].json.name}}",
+        "binaryProperty": "data",
+        "displayName": "Document for Store A"
+      }
+    },
+    {
+      "name": "Upload to Store B",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [450, 400],
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$node['Create Store B'].json.name}}",
+        "binaryProperty": "data",
+        "displayName": "Document for Store B"
+      }
+    },
+    {
+      "name": "List Docs Store A",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [650, 200],
+      "parameters": {
+        "operation": "list",
+        "storeName": "={{$node['Create Store A'].json.name}}",
+        "returnAll": true
+      }
+    },
+    {
+      "name": "List Docs Store B",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [650, 400],
+      "parameters": {
+        "operation": "list",
+        "storeName": "={{$node['Create Store B'].json.name}}",
+        "returnAll": true
+      }
+    },
+    {
+      "name": "Query Store A",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [850, 200],
+      "parameters": {
+        "operation": "query",
+        "storeName": "={{$node['Create Store A'].json.name}}",
+        "query": "Summarize content from Store A",
+        "modelName": "gemini-2.0-flash-exp"
+      }
+    },
+    {
+      "name": "Query Store B",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [850, 400],
+      "parameters": {
+        "operation": "query",
+        "storeName": "={{$node['Create Store B'].json.name}}",
+        "query": "Summarize content from Store B",
+        "modelName": "gemini-2.0-flash-exp"
+      }
+    },
+    {
+      "name": "Delete Store A",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [1050, 200],
+      "parameters": {
+        "operation": "delete",
+        "storeName": "={{$node['Create Store A'].json.name}}",
+        "force": true
+      }
+    },
+    {
+      "name": "Delete Store B",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [1050, 400],
+      "parameters": {
+        "operation": "delete",
+        "storeName": "={{$node['Create Store B'].json.name}}",
+        "force": true
+      }
+    }
+  ],
+  "connections": {
+    "Create Store A": {
+      "main": [
+        [
+          {
+            "node": "Upload to Store A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Store B": {
+      "main": [
+        [
+          {
+            "node": "Upload to Store B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Store A": {
+      "main": [
+        [
+          {
+            "node": "List Docs Store A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Store B": {
+      "main": [
+        [
+          {
+            "node": "List Docs Store B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Docs Store A": {
+      "main": [
+        [
+          {
+            "node": "Query Store A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Docs Store B": {
+      "main": [
+        [
+          {
+            "node": "Query Store B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Store A": {
+      "main": [
+        [
+          {
+            "node": "Delete Store A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Store B": {
+      "main": [
+        [
+          {
+            "node": "Delete Store B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

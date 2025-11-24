@@ -5,7 +5,7 @@
 
 import { TEST_TIMEOUTS, formatTime } from '../setup/testEnvironment';
 import { TEST_CONFIG } from '../setup/testEnvironment';
-import { Document, CustomMetadata, DocumentState } from '../../../utils/types';
+import { Document, CustomMetadata, DocumentState, Operation } from '../../../utils/types';
 
 interface DocumentCreateRequest {
   displayName?: string;
@@ -29,7 +29,9 @@ interface QueryRequest {
  * Makes an authenticated API request to the Gemini API
  */
 async function makeGeminiRequest<T>(method: string, endpoint: string, body?: unknown): Promise<T> {
-  const url = `${TEST_CONFIG.baseUrl}${endpoint}?key=${TEST_CONFIG.apiKey}`;
+  // Use & if endpoint already has query parameters, otherwise use ?
+  const separator = endpoint.includes('?') ? '&' : '?';
+  const url = `${TEST_CONFIG.baseUrl}${endpoint}${separator}key=${TEST_CONFIG.apiKey}`;
 
   const response = await fetch(url, {
     method,
@@ -92,7 +94,9 @@ export async function uploadTestDocument(
 
   try {
     // Start resumable upload session
-    const uploadUrl = `${TEST_CONFIG.baseUrl}/upload/v1beta/fileSearchStores/${storeId}:uploadToFileSearchStore?key=${TEST_CONFIG.apiKey}`;
+    // Note: Upload endpoint has /upload before /v1beta
+    const baseWithoutVersion = TEST_CONFIG.baseUrl.replace('/v1beta', '');
+    const uploadUrl = `${baseWithoutVersion}/upload/v1beta/fileSearchStores/${storeId}:uploadToFileSearchStore?key=${TEST_CONFIG.apiKey}`;
 
     const startResponse = await fetch(uploadUrl, {
       method: 'POST',
@@ -132,12 +136,23 @@ export async function uploadTestDocument(
       throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
     }
 
-    const document = (await uploadResponse.json()) as Document;
-    const elapsed = formatTime(Date.now() - startTime);
+    const operation = (await uploadResponse.json()) as Operation;
+    const uploadElapsed = formatTime(Date.now() - startTime);
 
-    console.log(`  ✓ Document uploaded: ${document.name} (${elapsed})`);
-    console.log(`    State: ${document.state}`);
-    console.log(`    Created At: ${document.createTime}`);
+    // Extract document name from operation response
+    const documentName = operation.response?.documentName as string;
+    if (!documentName) {
+      throw new Error(
+        `Upload operation did not return a documentName. Operation: ${JSON.stringify(operation)}`,
+      );
+    }
+
+    console.log(`  ✓ Document upload operation completed (${uploadElapsed})`);
+    console.log(`    Document name: ${documentName}`);
+
+    // Extract document ID and fetch full document details
+    const docId = documentName.split('/').pop() || '';
+    const document = await getTestDocument(storeName, docId);
 
     return document;
   } catch (error) {

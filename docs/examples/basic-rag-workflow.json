@@ -1,0 +1,392 @@
+{
+  "name": "Basic RAG Knowledge Base Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "id": "manual-trigger"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "displayName": "Technical Documentation Store"
+      },
+      "name": "Create File Search Store",
+      "type": "n8n-nodes-custom.geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "id": "create-store",
+      "notes": "Creates a new File Search store for storing technical documentation. The store acts as a container for all documents.",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$json.name}}",
+        "binaryPropertyName": "data",
+        "displayName": "Machine Learning Best Practices Guide",
+        "customMetadata": {
+          "metadataValues": [
+            {
+              "key": "category",
+              "valueType": "string",
+              "value": "machine-learning"
+            },
+            {
+              "key": "author",
+              "valueType": "string",
+              "value": "Dr. Jane Smith"
+            },
+            {
+              "key": "year",
+              "valueType": "number",
+              "value": "2024"
+            },
+            {
+              "key": "tags",
+              "valueType": "stringList",
+              "values": "best-practices,ml,tutorial"
+            }
+          ]
+        },
+        "chunkingOptions": {
+          "maxTokensPerChunk": 200,
+          "maxOverlapTokens": 20
+        },
+        "waitForCompletion": true
+      },
+      "name": "Upload Document 1",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [680, 200],
+      "id": "upload-doc-1",
+      "notes": "Uploads the first document with metadata. The metadata helps organize and filter documents later. Wait for completion ensures the document is fully processed before continuing.",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$node['Create File Search Store'].json.name}}",
+        "binaryPropertyName": "data",
+        "displayName": "Neural Networks Architecture Guide",
+        "customMetadata": {
+          "metadataValues": [
+            {
+              "key": "category",
+              "valueType": "string",
+              "value": "neural-networks"
+            },
+            {
+              "key": "author",
+              "valueType": "string",
+              "value": "Prof. John Doe"
+            },
+            {
+              "key": "year",
+              "valueType": "number",
+              "value": "2024"
+            },
+            {
+              "key": "tags",
+              "valueType": "stringList",
+              "values": "neural-networks,deep-learning,architecture"
+            }
+          ]
+        },
+        "chunkingOptions": {
+          "maxTokensPerChunk": 200,
+          "maxOverlapTokens": 20
+        },
+        "waitForCompletion": true
+      },
+      "name": "Upload Document 2",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [680, 400],
+      "id": "upload-doc-2",
+      "notes": "Uploads a second document with different metadata. Each document can have its own category, author, and tags for better organization.",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$node['Create File Search Store'].json.name}}",
+        "binaryPropertyName": "data",
+        "displayName": "Transformer Models Overview",
+        "customMetadata": {
+          "metadataValues": [
+            {
+              "key": "category",
+              "valueType": "string",
+              "value": "transformers"
+            },
+            {
+              "key": "author",
+              "valueType": "string",
+              "value": "Dr. Jane Smith"
+            },
+            {
+              "key": "year",
+              "valueType": "number",
+              "value": "2023"
+            },
+            {
+              "key": "tags",
+              "valueType": "stringList",
+              "values": "transformers,attention,nlp"
+            }
+          ]
+        },
+        "chunkingOptions": {
+          "maxTokensPerChunk": 200,
+          "maxOverlapTokens": 20
+        },
+        "waitForCompletion": true
+      },
+      "name": "Upload Document 3",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [680, 600],
+      "id": "upload-doc-3",
+      "notes": "Uploads a third document. Note the different year (2023) which can be used for filtering older vs newer content.",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "mergeByPosition"
+      },
+      "name": "Wait for All Uploads",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [900, 400],
+      "id": "merge-uploads",
+      "notes": "Waits for all three upload operations to complete before proceeding to query the documents."
+    },
+    {
+      "parameters": {
+        "operation": "query",
+        "model": "gemini-2.5-flash",
+        "query": "What are the key differences between traditional neural networks and transformer architectures? Focus on the attention mechanism.",
+        "storeNames": "={{$node['Create File Search Store'].json.name}}",
+        "metadataFilter": ""
+      },
+      "name": "Query Documents",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [1120, 400],
+      "id": "query-docs",
+      "notes": "Queries all documents in the store using Gemini 2.5 Flash model. The model will search through the uploaded documents and provide an AI-generated answer based on the content.",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "answer-text",
+              "name": "answer",
+              "value": "={{$json.candidates[0].content.parts[0].text}}",
+              "type": "string"
+            },
+            {
+              "id": "store-name",
+              "name": "storeName",
+              "value": "={{$node['Create File Search Store'].json.name}}",
+              "type": "string"
+            },
+            {
+              "id": "query-text",
+              "name": "query",
+              "value": "What are the key differences between traditional neural networks and transformer architectures?",
+              "type": "string"
+            },
+            {
+              "id": "model-used",
+              "name": "model",
+              "value": "gemini-2.5-flash",
+              "type": "string"
+            },
+            {
+              "id": "citations",
+              "name": "groundingMetadata",
+              "value": "={{$json.candidates[0].groundingMetadata}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Format Results",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1340, 400],
+      "id": "format-results",
+      "notes": "Extracts and formats the key information from the query response: the answer text, store name, original query, model used, and grounding metadata (citations)."
+    },
+    {
+      "parameters": {
+        "content": "=## Query Results\n\n**Query:** {{$json.query}}\n\n**Answer:**\n{{$json.answer}}\n\n**Store:** {{$json.storeName}}\n\n**Model:** {{$json.model}}\n\n**Citations:** {{$json.groundingMetadata ? JSON.stringify($json.groundingMetadata, null, 2) : 'No citations available'}}",
+        "height": 464,
+        "width": 567
+      },
+      "name": "Display Results",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1560, 400],
+      "id": "display-results"
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Create File Search Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create File Search Store": {
+      "main": [
+        [
+          {
+            "node": "Upload Document 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload Document 2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload Document 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Document 1": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Uploads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Document 2": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Uploads",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Upload Document 3": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Uploads",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Wait for All Uploads": {
+      "main": [
+        [
+          {
+            "node": "Query Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Documents": {
+      "main": [
+        [
+          {
+            "node": "Format Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Results": {
+      "main": [
+        [
+          {
+            "node": "Display Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-11-24T00:00:00.000Z",
+      "updatedAt": "2024-11-24T00:00:00.000Z",
+      "id": "1",
+      "name": "Gemini File Search"
+    },
+    {
+      "createdAt": "2024-11-24T00:00:00.000Z",
+      "updatedAt": "2024-11-24T00:00:00.000Z",
+      "id": "2",
+      "name": "RAG"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a"
+  },
+  "id": "basic-rag-workflow",
+  "versionId": "1"
+}

@@ -1,0 +1,122 @@
+{
+  "name": "Pagination Workflow",
+  "nodes": [
+    {
+      "name": "List Stores Page 1",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "parameters": {
+        "operation": "list",
+        "returnAll": false,
+        "limit": 5
+      }
+    },
+    {
+      "name": "List Stores Page 2",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "parameters": {
+        "operation": "list",
+        "returnAll": false,
+        "limit": 5,
+        "pageToken": "={{$node['List Stores Page 1'].json.nextPageToken}}"
+      }
+    },
+    {
+      "name": "Create Test Store",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [650, 200],
+      "parameters": {
+        "operation": "create",
+        "displayName": "Pagination Test Store"
+      }
+    },
+    {
+      "name": "List Documents All",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [850, 200],
+      "parameters": {
+        "operation": "list",
+        "storeName": "={{$node['Create Test Store'].json.name}}",
+        "returnAll": true
+      }
+    },
+    {
+      "name": "List Documents Limited",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [1050, 200],
+      "parameters": {
+        "operation": "list",
+        "storeName": "={{$node['Create Test Store'].json.name}}",
+        "returnAll": false,
+        "limit": 3
+      }
+    },
+    {
+      "name": "Cleanup Store",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [1250, 200],
+      "parameters": {
+        "operation": "delete",
+        "storeName": "={{$node['Create Test Store'].json.name}}",
+        "force": true
+      }
+    }
+  ],
+  "connections": {
+    "List Stores Page 1": {
+      "main": [
+        [
+          {
+            "node": "List Stores Page 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Test Store": {
+      "main": [
+        [
+          {
+            "node": "List Documents All",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Documents All": {
+      "main": [
+        [
+          {
+            "node": "List Documents Limited",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Documents Limited": {
+      "main": [
+        [
+          {
+            "node": "Cleanup Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

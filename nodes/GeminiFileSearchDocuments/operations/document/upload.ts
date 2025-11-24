@@ -24,6 +24,33 @@ interface ChunkingOptionsParam {
   maxOverlapTokens?: number;
 }
 
+/**
+ * Uploads a binary file to a Gemini File Search Store
+ *
+ * Performs resumable upload of file content with optional metadata and chunking configuration.
+ * Supports files up to 100MB. Can optionally wait for processing to complete.
+ *
+ * @param this - n8n execution context
+ * @param index - Item index in the workflow execution
+ * @returns Promise resolving to Operation object (or completed result if waitForCompletion=true)
+ * @throws {NodeOperationError} When store name invalid, file size exceeds 100MB, or metadata invalid
+ * @throws {NodeApiError} When upload fails or operation polling times out
+ *
+ * @example
+ * ```typescript
+ * // Upload PDF with metadata and custom chunking
+ * const operation = await upload.call(this, 0);
+ * // Parameters from node:
+ * // - storeName: 'fileSearchStores/my-store'
+ * // - binaryPropertyName: 'data'
+ * // - displayName: 'Technical Documentation'
+ * // - customMetadata: [{ key: 'category', stringValue: 'docs' }]
+ * // - chunkingOptions: { maxTokensPerChunk: 800, maxOverlapTokens: 100 }
+ * // - waitForCompletion: true
+ *
+ * console.log(operation.response.name); // Document resource name
+ * ```
+ */
 export async function upload(this: IExecuteFunctions, index: number): Promise<Operation> {
   const storeName = this.getNodeParameter('storeName', index) as string;
   const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index);

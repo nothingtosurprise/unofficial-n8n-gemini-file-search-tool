@@ -1,0 +1,496 @@
+{
+  "name": "Bulk Document Upload with Progress Tracking",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 400],
+      "id": "manual-trigger"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "displayName": "Bulk Upload Store"
+      },
+      "name": "Create Store",
+      "type": "n8n-nodes-custom.geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [460, 400],
+      "id": "create-store",
+      "notes": "Creates a new store to hold all uploaded documents. This is the container for your document collection.",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "/Users/documents/research-papers",
+        "options": {
+          "recursive": true
+        }
+      },
+      "name": "List Files in Directory",
+      "type": "n8n-nodes-base.filesReadDirectory",
+      "typeVersion": 1,
+      "position": [680, 400],
+      "id": "list-files",
+      "notes": "Reads all files from the specified directory. Set 'recursive' to true to include subdirectories. Adjust the path to your actual documents folder."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.extension}}",
+              "operation": "regex",
+              "value2": "^(pdf|txt|md|doc|docx)$"
+            }
+          ]
+        }
+      },
+      "name": "Filter Supported Files",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 400],
+      "id": "filter-files",
+      "notes": "Filters to only process supported file types (PDF, TXT, MD, DOC, DOCX). Adjust the regex pattern to match your file types."
+    },
+    {
+      "parameters": {
+        "filePath": "={{$json.path}}",
+        "options": {
+          "propertyName": "data"
+        }
+      },
+      "name": "Read File Content",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "id": "read-file",
+      "notes": "Reads the binary content of each file. The file content is stored in the 'data' binary property."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "filename",
+              "name": "fileName",
+              "value": "={{$json.name}}",
+              "type": "string"
+            },
+            {
+              "id": "filepath",
+              "name": "filePath",
+              "value": "={{$json.path}}",
+              "type": "string"
+            },
+            {
+              "id": "extension",
+              "name": "fileType",
+              "value": "={{$json.extension}}",
+              "type": "string"
+            },
+            {
+              "id": "category",
+              "name": "category",
+              "value": "={{$json.directory.split('/').slice(-1)[0]}}",
+              "type": "string"
+            },
+            {
+              "id": "year",
+              "name": "year",
+              "value": "={{$json.name.match(/\\d{4}/)?.[0] || '2024'}}",
+              "type": "string"
+            },
+            {
+              "id": "store-name",
+              "name": "storeName",
+              "value": "={{$node['Create Store'].json.name}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Extract Metadata from Filename",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1340, 300],
+      "id": "extract-metadata",
+      "notes": "Extracts metadata from the file path and name. Category is derived from the parent folder name. Year is extracted from filename using regex (defaults to 2024 if not found)."
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$json.storeName}}",
+        "binaryPropertyName": "data",
+        "displayName": "={{$json.fileName}}",
+        "customMetadata": {
+          "metadataValues": [
+            {
+              "key": "category",
+              "valueType": "string",
+              "value": "={{$json.category}}"
+            },
+            {
+              "key": "fileType",
+              "valueType": "string",
+              "value": "={{$json.fileType}}"
+            },
+            {
+              "key": "year",
+              "valueType": "number",
+              "value": "={{$json.year}}"
+            },
+            {
+              "key": "originalPath",
+              "valueType": "string",
+              "value": "={{$json.filePath}}"
+            }
+          ]
+        },
+        "chunkingOptions": {
+          "maxTokensPerChunk": 200,
+          "maxOverlapTokens": 20
+        },
+        "waitForCompletion": true
+      },
+      "name": "Upload Document",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [1560, 300],
+      "id": "upload-doc",
+      "notes": "Uploads each document to the store with extracted metadata. Wait for completion ensures proper error handling for each upload.",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "status",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "file",
+              "name": "fileName",
+              "value": "={{$json.displayName || $json.fileName}}",
+              "type": "string"
+            },
+            {
+              "id": "doc-name",
+              "name": "documentName",
+              "value": "={{$json.name}}",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "Document uploaded successfully",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Track Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1780, 200],
+      "id": "track-success",
+      "notes": "Records successful uploads with document details."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "status",
+              "name": "status",
+              "value": "skipped",
+              "type": "string"
+            },
+            {
+              "id": "file",
+              "name": "fileName",
+              "value": "={{$json.name}}",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "File type not supported",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Track Skipped",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1120, 500],
+      "id": "track-skipped",
+      "notes": "Records files that were skipped due to unsupported file types."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "status",
+              "name": "status",
+              "value": "error",
+              "type": "string"
+            },
+            {
+              "id": "file",
+              "name": "fileName",
+              "value": "={{$json.fileName || $json.name}}",
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{$json.error}}",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "Upload failed",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Track Errors",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1780, 400],
+      "id": "track-errors",
+      "notes": "Records failed uploads with error details. This node only receives data if 'continueOnFail' is enabled on the upload node."
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "multiplex"
+      },
+      "name": "Combine All Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [2000, 300],
+      "id": "combine-results",
+      "notes": "Combines all results (success, skipped, errors) into a single output for the final report."
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst summary = {\n  total: items.length,\n  success: items.filter(i => i.json.status === 'success').length,\n  errors: items.filter(i => i.json.status === 'error').length,\n  skipped: items.filter(i => i.json.status === 'skipped').length,\n  storeName: $node['Create Store'].json.name,\n  timestamp: new Date().toISOString()\n};\n\nconst details = items.map(item => ({\n  fileName: item.json.fileName,\n  status: item.json.status,\n  message: item.json.message,\n  documentName: item.json.documentName || null,\n  error: item.json.error || null\n}));\n\nreturn {\n  json: {\n    summary,\n    details\n  }\n};"
+      },
+      "name": "Generate Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 300],
+      "id": "generate-report",
+      "notes": "Generates a comprehensive report with summary statistics and detailed results for each file."
+    },
+    {
+      "parameters": {
+        "content": "=## Bulk Upload Report\n\n**Total Files:** {{$json.summary.total}}\n**Successful:** {{$json.summary.success}}\n**Failed:** {{$json.summary.errors}}\n**Skipped:** {{$json.summary.skipped}}\n**Store:** {{$json.summary.storeName}}\n**Completed:** {{$json.summary.timestamp}}\n\n---\n\n**Success Rate:** {{Math.round(($json.summary.success / $json.summary.total) * 100)}}%",
+        "height": 408,
+        "width": 467
+      },
+      "name": "Display Summary",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2440, 300],
+      "id": "display-summary"
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Create Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Store": {
+      "main": [
+        [
+          {
+            "node": "List Files in Directory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Files in Directory": {
+      "main": [
+        [
+          {
+            "node": "Filter Supported Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Supported Files": {
+      "main": [
+        [
+          {
+            "node": "Read File Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Track Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read File Content": {
+      "main": [
+        [
+          {
+            "node": "Extract Metadata from Filename",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Metadata from Filename": {
+      "main": [
+        [
+          {
+            "node": "Upload Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Document": {
+      "main": [
+        [
+          {
+            "node": "Track Success",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Track Errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Track Success": {
+      "main": [
+        [
+          {
+            "node": "Combine All Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Track Skipped": {
+      "main": [
+        [
+          {
+            "node": "Combine All Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Track Errors": {
+      "main": [
+        [
+          {
+            "node": "Combine All Results",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Combine All Results": {
+      "main": [
+        [
+          {
+            "node": "Generate Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Report": {
+      "main": [
+        [
+          {
+            "node": "Display Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-11-24T00:00:00.000Z",
+      "updatedAt": "2024-11-24T00:00:00.000Z",
+      "id": "1",
+      "name": "Gemini File Search"
+    },
+    {
+      "createdAt": "2024-11-24T00:00:00.000Z",
+      "updatedAt": "2024-11-24T00:00:00.000Z",
+      "id": "3",
+      "name": "Bulk Upload"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a"
+  },
+  "id": "bulk-document-upload",
+  "versionId": "1"
+}

@@ -1,0 +1,155 @@
+{
+  "name": "Complete RAG Workflow",
+  "nodes": [
+    {
+      "name": "Create Store",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "parameters": {
+        "operation": "create",
+        "displayName": "E2E Test Store for RAG"
+      }
+    },
+    {
+      "name": "List Stores",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "parameters": {
+        "operation": "list",
+        "returnAll": false,
+        "limit": 10
+      }
+    },
+    {
+      "name": "Get Store Details",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "parameters": {
+        "operation": "get",
+        "storeName": "={{$node['Create Store'].json.name}}"
+      }
+    },
+    {
+      "name": "Upload Document",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$node['Create Store'].json.name}}",
+        "binaryProperty": "data",
+        "displayName": "Test Document"
+      }
+    },
+    {
+      "name": "List Documents",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "parameters": {
+        "operation": "list",
+        "storeName": "={{$node['Create Store'].json.name}}",
+        "returnAll": false,
+        "limit": 10
+      }
+    },
+    {
+      "name": "Query Documents",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "parameters": {
+        "operation": "query",
+        "storeName": "={{$node['Create Store'].json.name}}",
+        "query": "What is the content of the document?",
+        "modelName": "gemini-2.0-flash-exp"
+      }
+    },
+    {
+      "name": "Delete Store",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [1450, 300],
+      "parameters": {
+        "operation": "delete",
+        "storeName": "={{$node['Create Store'].json.name}}",
+        "force": true
+      }
+    }
+  ],
+  "connections": {
+    "Create Store": {
+      "main": [
+        [
+          {
+            "node": "List Stores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Stores": {
+      "main": [
+        [
+          {
+            "node": "Get Store Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Store Details": {
+      "main": [
+        [
+          {
+            "node": "Upload Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Document": {
+      "main": [
+        [
+          {
+            "node": "List Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Documents": {
+      "main": [
+        [
+          {
+            "node": "Query Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Documents": {
+      "main": [
+        [
+          {
+            "node": "Delete Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

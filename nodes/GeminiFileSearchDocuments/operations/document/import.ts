@@ -23,6 +23,32 @@ interface ChunkingOptionsParam {
   maxOverlapTokens?: number;
 }
 
+/**
+ * Imports a file from Google Files API into a File Search Store
+ *
+ * References an existing file in Files API by name and imports it into the store.
+ * Supports optional metadata and chunking configuration. Can wait for processing completion.
+ *
+ * @param this - n8n execution context
+ * @param index - Item index in the workflow execution
+ * @returns Promise resolving to Operation object (or completed result if waitForCompletion=true)
+ * @throws {NodeOperationError} When store name invalid, display name too long, or metadata invalid
+ * @throws {NodeApiError} When import fails or operation polling times out
+ *
+ * @example
+ * ```typescript
+ * // Import file from Files API
+ * const operation = await importFile.call(this, 0);
+ * // Parameters from node:
+ * // - storeName: 'fileSearchStores/my-store'
+ * // - fileName: 'files/abc123xyz'
+ * // - displayName: 'Imported Document'
+ * // - customMetadata: [{ key: 'source', stringValue: 'files-api' }]
+ * // - waitForCompletion: true
+ *
+ * console.log(operation.response.name); // Document resource name
+ * ```
+ */
 export async function importFile(this: IExecuteFunctions, index: number): Promise<Operation> {
   const storeName = this.getNodeParameter('storeName', index) as string;
   const fileName = this.getNodeParameter('fileName', index) as string;

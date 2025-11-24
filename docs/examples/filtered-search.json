@@ -1,0 +1,855 @@
+{
+  "name": "Filtered Document Search with Metadata",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 500],
+      "id": "manual-trigger"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "displayName": "Research Papers Collection"
+      },
+      "name": "Create Research Store",
+      "type": "n8n-nodes-custom.geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [460, 500],
+      "id": "create-store",
+      "notes": "Creates a store for research papers with rich metadata for filtering.",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$json.name}}",
+        "binaryPropertyName": "data",
+        "displayName": "Deep Learning Fundamentals",
+        "customMetadata": {
+          "metadataValues": [
+            {
+              "key": "author",
+              "valueType": "string",
+              "value": "Dr. Sarah Johnson"
+            },
+            {
+              "key": "category",
+              "valueType": "string",
+              "value": "deep-learning"
+            },
+            {
+              "key": "year",
+              "valueType": "number",
+              "value": "2024"
+            },
+            {
+              "key": "difficulty",
+              "valueType": "string",
+              "value": "beginner"
+            },
+            {
+              "key": "tags",
+              "valueType": "stringList",
+              "values": "neural-networks,backpropagation,optimization"
+            },
+            {
+              "key": "citations",
+              "valueType": "number",
+              "value": "156"
+            }
+          ]
+        },
+        "waitForCompletion": true
+      },
+      "name": "Upload Paper 1",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [680, 200],
+      "id": "upload-1",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$node['Create Research Store'].json.name}}",
+        "binaryPropertyName": "data",
+        "displayName": "Advanced Transformer Architectures",
+        "customMetadata": {
+          "metadataValues": [
+            {
+              "key": "author",
+              "valueType": "string",
+              "value": "Prof. Michael Chen"
+            },
+            {
+              "key": "category",
+              "valueType": "string",
+              "value": "transformers"
+            },
+            {
+              "key": "year",
+              "valueType": "number",
+              "value": "2024"
+            },
+            {
+              "key": "difficulty",
+              "valueType": "string",
+              "value": "advanced"
+            },
+            {
+              "key": "tags",
+              "valueType": "stringList",
+              "values": "attention,self-attention,bert,gpt"
+            },
+            {
+              "key": "citations",
+              "valueType": "number",
+              "value": "423"
+            }
+          ]
+        },
+        "waitForCompletion": true
+      },
+      "name": "Upload Paper 2",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [680, 350],
+      "id": "upload-2",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$node['Create Research Store'].json.name}}",
+        "binaryPropertyName": "data",
+        "displayName": "Introduction to CNNs",
+        "customMetadata": {
+          "metadataValues": [
+            {
+              "key": "author",
+              "valueType": "string",
+              "value": "Dr. Emily Rodriguez"
+            },
+            {
+              "key": "category",
+              "valueType": "string",
+              "value": "computer-vision"
+            },
+            {
+              "key": "year",
+              "valueType": "number",
+              "value": "2023"
+            },
+            {
+              "key": "difficulty",
+              "valueType": "string",
+              "value": "intermediate"
+            },
+            {
+              "key": "tags",
+              "valueType": "stringList",
+              "values": "cnn,convolution,image-processing"
+            },
+            {
+              "key": "citations",
+              "valueType": "number",
+              "value": "289"
+            }
+          ]
+        },
+        "waitForCompletion": true
+      },
+      "name": "Upload Paper 3",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [680, 500],
+      "id": "upload-3",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$node['Create Research Store'].json.name}}",
+        "binaryPropertyName": "data",
+        "displayName": "RNN and LSTM Networks",
+        "customMetadata": {
+          "metadataValues": [
+            {
+              "key": "author",
+              "valueType": "string",
+              "value": "Dr. Sarah Johnson"
+            },
+            {
+              "key": "category",
+              "valueType": "string",
+              "value": "sequence-models"
+            },
+            {
+              "key": "year",
+              "valueType": "number",
+              "value": "2023"
+            },
+            {
+              "key": "difficulty",
+              "valueType": "string",
+              "value": "intermediate"
+            },
+            {
+              "key": "tags",
+              "valueType": "stringList",
+              "values": "rnn,lstm,time-series,nlp"
+            },
+            {
+              "key": "citations",
+              "valueType": "number",
+              "value": "334"
+            }
+          ]
+        },
+        "waitForCompletion": true
+      },
+      "name": "Upload Paper 4",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [680, 650],
+      "id": "upload-4",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "storeName": "={{$node['Create Research Store'].json.name}}",
+        "binaryPropertyName": "data",
+        "displayName": "GANs for Beginners",
+        "customMetadata": {
+          "metadataValues": [
+            {
+              "key": "author",
+              "valueType": "string",
+              "value": "Prof. Michael Chen"
+            },
+            {
+              "key": "category",
+              "valueType": "string",
+              "value": "generative-models"
+            },
+            {
+              "key": "year",
+              "valueType": "number",
+              "value": "2024"
+            },
+            {
+              "key": "difficulty",
+              "valueType": "string",
+              "value": "beginner"
+            },
+            {
+              "key": "tags",
+              "valueType": "stringList",
+              "values": "gan,generative,adversarial"
+            },
+            {
+              "key": "citations",
+              "valueType": "number",
+              "value": "198"
+            }
+          ]
+        },
+        "waitForCompletion": true
+      },
+      "name": "Upload Paper 5",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [680, 800],
+      "id": "upload-5",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "mergeByPosition"
+      },
+      "name": "Wait for All Uploads",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [900, 500],
+      "id": "merge-uploads",
+      "notes": "Waits for all uploads to complete before running queries."
+    },
+    {
+      "parameters": {
+        "operation": "query",
+        "model": "gemini-2.5-flash",
+        "query": "Explain the key concepts in deep learning for someone who is just starting out.",
+        "storeNames": "={{$node['Create Research Store'].json.name}}",
+        "metadataFilter": "difficulty=\"beginner\" AND year>=2024"
+      },
+      "name": "Query 1: Beginner Papers from 2024",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [1120, 200],
+      "id": "query-1",
+      "notes": "Searches only beginner-level papers published in 2024 or later. Uses metadata filter: difficulty=\"beginner\" AND year>=2024",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "query",
+        "model": "gemini-2.5-flash",
+        "query": "What are the latest advances in transformer architectures?",
+        "storeNames": "={{$node['Create Research Store'].json.name}}",
+        "metadataFilter": "category=\"transformers\" OR tags:\"attention\""
+      },
+      "name": "Query 2: Transformer Papers",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [1120, 400],
+      "id": "query-2",
+      "notes": "Searches only papers about transformers or containing 'attention' in tags. Uses OR operator to broaden search.",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "query",
+        "model": "gemini-2.5-pro",
+        "query": "Compare the effectiveness of different sequence modeling approaches for time series prediction.",
+        "storeNames": "={{$node['Create Research Store'].json.name}}",
+        "metadataFilter": "author=\"Dr. Sarah Johnson\" AND citations>150"
+      },
+      "name": "Query 3: High-Impact Papers by Specific Author",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [1120, 600],
+      "id": "query-3",
+      "notes": "Searches papers by Dr. Sarah Johnson with over 150 citations. Uses Gemini 2.5 Pro for more detailed analysis.",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "query",
+        "model": "gemini-2.5-flash",
+        "query": "What papers discuss computer vision techniques from the last year?",
+        "storeNames": "={{$node['Create Research Store'].json.name}}",
+        "metadataFilter": "category=\"computer-vision\" AND year=2023"
+      },
+      "name": "Query 4: Computer Vision from 2023",
+      "type": "n8n-nodes-custom.geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [1120, 800],
+      "id": "query-4",
+      "notes": "Searches computer vision papers published exactly in 2023. Demonstrates exact match filtering.",
+      "credentials": {
+        "geminiApi": {
+          "id": "1",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "query-name",
+              "name": "queryName",
+              "value": "Beginner Papers 2024",
+              "type": "string"
+            },
+            {
+              "id": "filter",
+              "name": "filterUsed",
+              "value": "difficulty=\"beginner\" AND year>=2024",
+              "type": "string"
+            },
+            {
+              "id": "answer",
+              "name": "answer",
+              "value": "={{$json.candidates[0].content.parts[0].text}}",
+              "type": "string"
+            },
+            {
+              "id": "citations",
+              "name": "documentsFound",
+              "value": "={{$json.candidates[0].groundingMetadata?.groundingChunks?.length || 0}}",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "name": "Format Query 1 Results",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1340, 200],
+      "id": "format-1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "query-name",
+              "name": "queryName",
+              "value": "Transformer Papers",
+              "type": "string"
+            },
+            {
+              "id": "filter",
+              "name": "filterUsed",
+              "value": "category=\"transformers\" OR tags:\"attention\"",
+              "type": "string"
+            },
+            {
+              "id": "answer",
+              "name": "answer",
+              "value": "={{$json.candidates[0].content.parts[0].text}}",
+              "type": "string"
+            },
+            {
+              "id": "citations",
+              "name": "documentsFound",
+              "value": "={{$json.candidates[0].groundingMetadata?.groundingChunks?.length || 0}}",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "name": "Format Query 2 Results",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1340, 400],
+      "id": "format-2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "query-name",
+              "name": "queryName",
+              "value": "High-Impact Papers by Author",
+              "type": "string"
+            },
+            {
+              "id": "filter",
+              "name": "filterUsed",
+              "value": "author=\"Dr. Sarah Johnson\" AND citations>150",
+              "type": "string"
+            },
+            {
+              "id": "answer",
+              "name": "answer",
+              "value": "={{$json.candidates[0].content.parts[0].text}}",
+              "type": "string"
+            },
+            {
+              "id": "citations",
+              "name": "documentsFound",
+              "value": "={{$json.candidates[0].groundingMetadata?.groundingChunks?.length || 0}}",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "name": "Format Query 3 Results",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1340, 600],
+      "id": "format-3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "query-name",
+              "name": "queryName",
+              "value": "Computer Vision 2023",
+              "type": "string"
+            },
+            {
+              "id": "filter",
+              "name": "filterUsed",
+              "value": "category=\"computer-vision\" AND year=2023",
+              "type": "string"
+            },
+            {
+              "id": "answer",
+              "name": "answer",
+              "value": "={{$json.candidates[0].content.parts[0].text}}",
+              "type": "string"
+            },
+            {
+              "id": "citations",
+              "name": "documentsFound",
+              "value": "={{$json.candidates[0].groundingMetadata?.groundingChunks?.length || 0}}",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "name": "Format Query 4 Results",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1340, 800],
+      "id": "format-4"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "multiplex"
+      },
+      "name": "Combine All Query Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1560, 500],
+      "id": "combine-queries"
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "options": {
+          "fileName": "filtered-search-results.json"
+        }
+      },
+      "name": "Export to JSON",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [1780, 400],
+      "id": "export-json",
+      "notes": "Exports all query results to a JSON file for further processing or archiving."
+    },
+    {
+      "parameters": {
+        "operation": "toCsv",
+        "options": {
+          "fileName": "filtered-search-results.csv",
+          "delimiter": ","
+        }
+      },
+      "name": "Export to CSV",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [1780, 600],
+      "id": "export-csv",
+      "notes": "Exports results to CSV format for easy viewing in spreadsheet applications."
+    },
+    {
+      "parameters": {
+        "content": "=## Filtered Search Results\n\n**Store:** {{$node['Create Research Store'].json.name}}\n\n**Total Queries:** {{$json.length}}\n\n---\n\n### Metadata Filter Examples:\n\n1. **Beginner Level + Recent**\n   `difficulty=\"beginner\" AND year>=2024`\n\n2. **Category or Tag Match**\n   `category=\"transformers\" OR tags:\"attention\"`\n\n3. **Author + Citation Count**\n   `author=\"Dr. Sarah Johnson\" AND citations>150`\n\n4. **Exact Year Match**\n   `category=\"computer-vision\" AND year=2023`\n\n---\n\n**Filter Operators:**\n- `=` : Exact match\n- `>`, `>=`, `<`, `<=` : Numeric comparison\n- `:` : Contains (for string lists)\n- `AND`, `OR` : Logical operators\n- `NOT` : Negation",
+        "height": 664,
+        "width": 547
+      },
+      "name": "Filter Syntax Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2000, 300],
+      "id": "filter-guide"
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Create Research Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Research Store": {
+      "main": [
+        [
+          {
+            "node": "Upload Paper 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload Paper 2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload Paper 3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload Paper 4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload Paper 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Paper 1": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Uploads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Paper 2": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Uploads",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Upload Paper 3": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Uploads",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Upload Paper 4": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Uploads",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Upload Paper 5": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Uploads",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Wait for All Uploads": {
+      "main": [
+        [
+          {
+            "node": "Query 1: Beginner Papers from 2024",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Query 2: Transformer Papers",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Query 3: High-Impact Papers by Specific Author",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Query 4: Computer Vision from 2023",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query 1: Beginner Papers from 2024": {
+      "main": [
+        [
+          {
+            "node": "Format Query 1 Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query 2: Transformer Papers": {
+      "main": [
+        [
+          {
+            "node": "Format Query 2 Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query 3: High-Impact Papers by Specific Author": {
+      "main": [
+        [
+          {
+            "node": "Format Query 3 Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query 4: Computer Vision from 2023": {
+      "main": [
+        [
+          {
+            "node": "Format Query 4 Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Query 1 Results": {
+      "main": [
+        [
+          {
+            "node": "Combine All Query Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Query 2 Results": {
+      "main": [
+        [
+          {
+            "node": "Combine All Query Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Format Query 3 Results": {
+      "main": [
+        [
+          {
+            "node": "Combine All Query Results",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Format Query 4 Results": {
+      "main": [
+        [
+          {
+            "node": "Combine All Query Results",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Combine All Query Results": {
+      "main": [
+        [
+          {
+            "node": "Export to JSON",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Export to CSV",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter Syntax Guide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-11-24T00:00:00.000Z",
+      "updatedAt": "2024-11-24T00:00:00.000Z",
+      "id": "1",
+      "name": "Gemini File Search"
+    },
+    {
+      "createdAt": "2024-11-24T00:00:00.000Z",
+      "updatedAt": "2024-11-24T00:00:00.000Z",
+      "id": "4",
+      "name": "Filtered Search"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a"
+  },
+  "id": "filtered-search",
+  "versionId": "1"
+}

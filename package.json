@@ -1,18 +1,28 @@
 {
   "name": "n8n-nodes-gemini-file-search",
-  "version": "0.1.0",
-  "description": "n8n nodes for Google Gemini File Search API integration",
+  "version": "1.0.0",
+  "description": "n8n community nodes for Google Gemini File Search Tool API - Build powerful document search and RAG systems with AI-powered semantic search",
   "keywords": [
     "n8n",
     "n8n-nodes",
     "n8n-community-node-package",
     "gemini",
+    "google",
     "google-ai",
     "file-search",
-    "document-search"
+    "document-search",
+    "rag",
+    "semantic-search",
+    "ai",
+    "machine-learning",
+    "document-management",
+    "vector-search"
   ],
   "license": "MIT",
   "homepage": "https://github.com/yourusername/n8n-nodes-gemini-file-search",
+  "bugs": {
+    "url": "https://github.com/yourusername/n8n-nodes-gemini-file-search/issues"
+  },
   "author": {
     "name": "Your Name",
     "email": "your.email@example.com"
@@ -70,6 +80,7 @@
     "nock": "^13.5.6",
     "prettier": "^3.6.2",
     "ts-jest": "^29.4.5",
+    "typedoc": "^0.28.14",
     "typescript": "^5.9.3"
   },
   "engines": {

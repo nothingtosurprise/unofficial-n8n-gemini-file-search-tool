@@ -5,6 +5,25 @@ import {
   INodeProperties,
 } from 'n8n-workflow';
 
+/**
+ * Credential type for authenticating with Google Gemini API
+ *
+ * This credential stores the API key required to access Gemini services including
+ * File Search Stores, Documents, and generative AI models. The API key is automatically
+ * added to requests via the x-goog-api-key header.
+ *
+ * @example
+ * ```typescript
+ * // In n8n workflow, users configure:
+ * // - API Key: Their Google AI Studio or Vertex AI API key
+ *
+ * // The credential is then referenced by nodes:
+ * const credentials = await this.getCredentials('geminiApi');
+ * const apiKey = credentials.apiKey as string;
+ * ```
+ *
+ * @see {@link https://ai.google.dev/gemini-api/docs/api-key | Gemini API Key Documentation}
+ */
 export class GeminiApi implements ICredentialType {
   name = 'geminiApi';
   displayName = 'Gemini API';

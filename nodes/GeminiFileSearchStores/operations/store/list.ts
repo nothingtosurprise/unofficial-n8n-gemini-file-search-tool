@@ -6,6 +6,27 @@ interface ListResponse {
   fileSearchStores?: FileSearchStore[];
 }
 
+/**
+ * Lists Gemini File Search Stores with optional pagination
+ *
+ * Retrieves all stores or a limited number based on node parameters.
+ * Supports both paginated and full list retrieval.
+ *
+ * @param this - n8n execution context
+ * @param index - Item index in the workflow execution
+ * @returns Promise resolving to array of FileSearchStore objects
+ * @throws {NodeApiError} When API request fails
+ *
+ * @example
+ * ```typescript
+ * // Get all stores
+ * const allStores = await list.call(this, 0); // returnAll = true
+ *
+ * // Get first 10 stores
+ * const stores = await list.call(this, 0); // returnAll = false, limit = 10
+ * console.log(`Found ${stores.length} stores`);
+ * ```
+ */
 export async function list(this: IExecuteFunctions, index: number): Promise<FileSearchStore[]> {
   const returnAll = this.getNodeParameter('returnAll', index);
 

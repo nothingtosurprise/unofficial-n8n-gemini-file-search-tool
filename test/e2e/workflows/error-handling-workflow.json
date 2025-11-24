@@ -1,0 +1,91 @@
+{
+  "name": "Error Handling Workflow",
+  "nodes": [
+    {
+      "name": "Get Non-Existent Store",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "parameters": {
+        "operation": "get",
+        "storeName": "fileSearchStores/non-existent-store-123456789",
+        "continueOnFail": true
+      }
+    },
+    {
+      "name": "Delete Non-Existent Store",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "parameters": {
+        "operation": "delete",
+        "storeName": "fileSearchStores/non-existent-store-123456789",
+        "force": true,
+        "continueOnFail": true
+      }
+    },
+    {
+      "name": "List Documents Invalid Store",
+      "type": "geminiFileSearchDocuments",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "parameters": {
+        "operation": "list",
+        "storeName": "fileSearchStores/invalid-store-999",
+        "returnAll": false,
+        "limit": 10,
+        "continueOnFail": true
+      }
+    },
+    {
+      "name": "Get Operation Invalid",
+      "type": "geminiFileSearchStores",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "parameters": {
+        "operation": "getOperation",
+        "operationName": "operations/invalid-operation-123",
+        "continueOnFail": true
+      }
+    }
+  ],
+  "connections": {
+    "Get Non-Existent Store": {
+      "main": [
+        [
+          {
+            "node": "Delete Non-Existent Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Non-Existent Store": {
+      "main": [
+        [
+          {
+            "node": "List Documents Invalid Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Documents Invalid Store": {
+      "main": [
+        [
+          {
+            "node": "Get Operation Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

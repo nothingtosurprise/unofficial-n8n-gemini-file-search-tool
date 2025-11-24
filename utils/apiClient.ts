@@ -20,8 +20,38 @@ interface UploadStartResponse {
 }
 
 /**
- * Makes a request to the Gemini API
- * Note: Return type must be 'any' due to n8n's dynamic response structures
+ * Makes an HTTP request to the Google Gemini API with automatic authentication
+ *
+ * This function handles credential retrieval, request construction, and error wrapping
+ * for all Gemini API endpoints. It automatically adds the API key to query string parameters.
+ *
+ * @param this - n8n execution context (IExecuteFunctions or ILoadOptionsFunctions)
+ * @param method - HTTP method (GET, POST, DELETE, etc.)
+ * @param endpoint - API endpoint path starting with / (e.g., '/fileSearchStores')
+ * @param body - Request body data (default: empty object)
+ * @param qs - Query string parameters (default: empty object, API key added automatically)
+ * @returns Promise resolving to API response (structure varies by endpoint)
+ * @throws {NodeApiError} When the API request fails or returns an error response
+ *
+ * @example
+ * ```typescript
+ * // Create a new file search store
+ * const store = await geminiApiRequest.call(
+ *   this,
+ *   'POST',
+ *   '/fileSearchStores',
+ *   { displayName: 'My Store' }
+ * );
+ *
+ * // Get a specific store
+ * const store = await geminiApiRequest.call(
+ *   this,
+ *   'GET',
+ *   '/fileSearchStores/store-id'
+ * );
+ * ```
+ *
+ * @internal Return type is 'any' due to n8n's dynamic response structures
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function geminiApiRequest(
@@ -61,8 +91,41 @@ export async function geminiApiRequest(
 }
 
 /**
- * Makes paginated requests to retrieve all items
- * Note: Return type must be 'any[]' as response structure varies by endpoint
+ * Retrieves all items from a paginated Gemini API endpoint
+ *
+ * This function automatically handles pagination by following nextPageToken values
+ * until all items are retrieved. Default page size is 20 items per request.
+ *
+ * @param this - n8n execution context (IExecuteFunctions or ILoadOptionsFunctions)
+ * @param propertyName - Name of the property containing items in response (e.g., 'fileSearchStores', 'documents')
+ * @param method - HTTP method (typically 'GET' for list operations)
+ * @param endpoint - API endpoint path starting with / (e.g., '/fileSearchStores')
+ * @param body - Request body data (default: empty object)
+ * @param qs - Query string parameters (default: empty object, pageSize and pageToken added automatically)
+ * @returns Promise resolving to array of all items across all pages
+ * @throws {NodeApiError} When any API request fails
+ *
+ * @example
+ * ```typescript
+ * // Get all file search stores
+ * const stores = await geminiApiRequestAllItems.call(
+ *   this,
+ *   'fileSearchStores',
+ *   'GET',
+ *   '/fileSearchStores'
+ * );
+ * console.log(`Retrieved ${stores.length} stores`);
+ *
+ * // Get all documents from a store
+ * const documents = await geminiApiRequestAllItems.call(
+ *   this,
+ *   'documents',
+ *   'GET',
+ *   '/fileSearchStores/store-id/documents'
+ * );
+ * ```
+ *
+ * @internal Return type is 'any[]' as item structure varies by endpoint
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function geminiApiRequestAllItems(
@@ -103,8 +166,49 @@ export async function geminiApiRequestAllItems(
 }
 
 /**
- * Performs a resumable upload for large files
- * Note: Return type must be 'any' as response structure is defined by Google API
+ * Performs a resumable upload of a file to a Gemini file search store
+ *
+ * This function implements Google's resumable upload protocol with two steps:
+ * 1. Start upload session and receive upload URL
+ * 2. Upload file data to the session URL
+ *
+ * Supports files up to 100MB with custom metadata and chunking configuration.
+ *
+ * @param this - n8n execution context (IExecuteFunctions)
+ * @param storeName - Full store name (e.g., 'fileSearchStores/my-store-id')
+ * @param file - File content as Buffer
+ * @param mimeType - MIME type of the file (e.g., 'application/pdf', 'text/plain')
+ * @param metadata - Document metadata including displayName, customMetadata, and chunkingConfig
+ * @returns Promise resolving to Operation object tracking the upload status
+ * @throws {NodeApiError} When upload session creation or file upload fails
+ * @throws {NodeOperationError} When file size exceeds 100MB limit (validated before calling)
+ *
+ * @example
+ * ```typescript
+ * // Upload a PDF with metadata
+ * const operation = await geminiResumableUpload.call(
+ *   this,
+ *   'fileSearchStores/my-store',
+ *   fileBuffer,
+ *   'application/pdf',
+ *   {
+ *     displayName: 'Technical Documentation',
+ *     customMetadata: [
+ *       { key: 'category', stringValue: 'docs' },
+ *       { key: 'version', numericValue: 2.0 }
+ *     ],
+ *     chunkingConfig: {
+ *       whiteSpaceConfig: {
+ *         maxTokensPerChunk: 800,
+ *         maxOverlapTokens: 100
+ *       }
+ *     }
+ *   }
+ * );
+ * console.log(operation.name); // Use for polling operation status
+ * ```
+ *
+ * @internal Return type is 'any' as response structure is defined by Google API
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function geminiResumableUpload(
@@ -150,8 +254,36 @@ export async function geminiResumableUpload(
 }
 
 /**
- * Polls a long-running operation until completion
- * Note: Return type must be 'any' as response structure varies by operation type
+ * Polls a long-running Gemini API operation until it completes or times out
+ *
+ * This function repeatedly checks operation status at regular intervals until
+ * the operation finishes (successfully or with error) or maximum attempts are reached.
+ * Default timeout is 10 minutes (120 attempts × 5 seconds).
+ *
+ * @param this - n8n execution context (IExecuteFunctions)
+ * @param operationName - Full operation name returned from API (e.g., 'operations/abc123')
+ * @param maxAttempts - Maximum number of polling attempts (default: 120)
+ * @param intervalMs - Milliseconds between polling attempts (default: 5000)
+ * @returns Promise resolving to the operation response when done
+ * @throws {NodeOperationError} When operation completes with error or exceeds timeout
+ *
+ * @example
+ * ```typescript
+ * // Poll an upload operation until completion
+ * const uploadOp = await geminiResumableUpload.call(this, storeName, file, mime, metadata);
+ * const result = await pollOperation.call(this, uploadOp.name);
+ * console.log(result.name); // Document name: 'fileSearchStores/store/documents/doc-id'
+ *
+ * // Poll with custom timeout (30 seconds)
+ * const result = await pollOperation.call(
+ *   this,
+ *   operationName,
+ *   6,     // maxAttempts
+ *   5000   // 6 × 5s = 30 seconds
+ * );
+ * ```
+ *
+ * @internal Return type is 'any' as response structure varies by operation type
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function pollOperation(
