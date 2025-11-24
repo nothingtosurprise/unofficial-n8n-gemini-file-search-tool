@@ -256,6 +256,20 @@ export const documentFields: INodeProperties[] = [
     },
     description: 'Max number of results to return',
   },
+  {
+    displayName: 'Metadata Filter',
+    name: 'metadataFilter',
+    type: 'string',
+    default: '',
+    displayOptions: {
+      show: {
+        operation: ['list'],
+      },
+    },
+    placeholder: 'author="Latour" AND year>2000',
+    description:
+      'Filter documents by metadata (AIP-160 format). Note: Filtering happens client-side after fetching all documents.',
+  },
 
   // Get/Delete operation fields
   {
