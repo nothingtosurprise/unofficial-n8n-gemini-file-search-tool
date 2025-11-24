@@ -6,9 +6,8 @@
 import dotenv from 'dotenv';
 
 // Load .env.test if it exists
-if (process.env.NODE_ENV !== 'test') {
-  dotenv.config({ path: '.env.test' });
-}
+// Always try to load for integration tests
+dotenv.config({ path: '.env.test' });
 
 export interface TestConfig {
   apiKey: string;

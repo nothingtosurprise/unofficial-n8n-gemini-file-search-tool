@@ -22,7 +22,9 @@ interface PaginatedStoresResponse {
  * This is a simplified version for integration testing
  */
 async function makeGeminiRequest<T>(method: string, endpoint: string, body?: unknown): Promise<T> {
-  const url = `${TEST_CONFIG.baseUrl}${endpoint}?key=${TEST_CONFIG.apiKey}`;
+  // Add API key to URL - check if endpoint already has query params
+  const separator = endpoint.includes('?') ? '&' : '?';
+  const url = `${TEST_CONFIG.baseUrl}${endpoint}${separator}key=${TEST_CONFIG.apiKey}`;
 
   const response = await fetch(url, {
     method,
