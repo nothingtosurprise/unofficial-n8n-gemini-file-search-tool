@@ -501,6 +501,63 @@ describe('apiClient', () => {
       ).rejects.toThrow('Operation failed: Invalid document format');
     });
 
+    it('should include error details in error description when available', async () => {
+      const errorDetails = {
+        fieldErrors: [
+          {
+            field: 'fileName',
+            description: 'File not found in Files API',
+          },
+        ],
+      };
+
+      (mockContext.helpers!.request as jest.Mock).mockResolvedValue({
+        done: true,
+        error: {
+          code: 404,
+          message: 'Import source not found',
+          details: errorDetails,
+        },
+      });
+
+      let caughtError: any;
+      try {
+        await pollOperation.call(mockContext as IExecuteFunctions, 'operations/abc123', 10, 100);
+      } catch (error) {
+        caughtError = error;
+      }
+
+      expect(caughtError).toBeInstanceOf(NodeOperationError);
+      expect(caughtError.message).toContain('Operation failed: Import source not found');
+      // Verify that error.description contains stringified details
+      if (caughtError.description) {
+        expect(caughtError.description).toContain('fieldErrors');
+        expect(caughtError.description).toContain('File not found in Files API');
+      }
+    });
+
+    it('should handle operation error without details', async () => {
+      (mockContext.helpers!.request as jest.Mock).mockResolvedValue({
+        done: true,
+        error: {
+          code: 500,
+          message: 'Internal server error',
+        },
+      });
+
+      let caughtError: any;
+      try {
+        await pollOperation.call(mockContext as IExecuteFunctions, 'operations/abc123', 10, 100);
+      } catch (error) {
+        caughtError = error;
+      }
+
+      expect(caughtError).toBeInstanceOf(NodeOperationError);
+      expect(caughtError.message).toContain('Operation failed: Internal server error');
+      // When no details, description should be undefined
+      expect(caughtError.description).toBeUndefined();
+    });
+
     it('should timeout after max attempts', async () => {
       (mockContext.helpers!.request as jest.Mock).mockResolvedValue({ done: false });
 

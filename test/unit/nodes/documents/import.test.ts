@@ -177,5 +177,81 @@ describe('Document Import Operation', () => {
         }),
       );
     });
+
+    it('should include string list metadata in import', async () => {
+      // Arrange
+      mockGetNodeParameter
+        .mockReturnValueOnce('fileSearchStores/test-store')
+        .mockReturnValueOnce('files/abc-123')
+        .mockReturnValueOnce('')
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce({
+          metadataValues: [
+            { key: 'tags', valueType: 'stringList', values: 'important, archived, reviewed' },
+          ],
+        })
+        .mockReturnValueOnce({}); // chunkingOptions
+
+      (apiClient.geminiApiRequest as jest.Mock).mockResolvedValue({ name: 'op' });
+
+      // Act
+      await importFile.call(mockExecuteFunctions as IExecuteFunctions, 0);
+
+      // Assert
+      expect(apiClient.geminiApiRequest).toHaveBeenCalledWith(
+        'POST',
+        '/fileSearchStores/test-store:importFile',
+        expect.objectContaining({
+          customMetadata: [
+            {
+              key: 'tags',
+              stringListValue: {
+                values: ['important', 'archived', 'reviewed'],
+              },
+            },
+          ],
+        }),
+      );
+    });
+
+    it('should handle mixed metadata types including string list', async () => {
+      // Arrange
+      mockGetNodeParameter
+        .mockReturnValueOnce('fileSearchStores/test-store')
+        .mockReturnValueOnce('files/abc-123')
+        .mockReturnValueOnce('')
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce({
+          metadataValues: [
+            { key: 'source', valueType: 'string', value: 'Files API' },
+            { key: 'year', valueType: 'number', value: '2024' },
+            { key: 'categories', valueType: 'stringList', values: 'finance, legal' },
+          ],
+        })
+        .mockReturnValueOnce({}); // chunkingOptions
+
+      (apiClient.geminiApiRequest as jest.Mock).mockResolvedValue({ name: 'op' });
+
+      // Act
+      await importFile.call(mockExecuteFunctions as IExecuteFunctions, 0);
+
+      // Assert
+      expect(apiClient.geminiApiRequest).toHaveBeenCalledWith(
+        'POST',
+        '/fileSearchStores/test-store:importFile',
+        expect.objectContaining({
+          customMetadata: [
+            { key: 'source', stringValue: 'Files API' },
+            { key: 'year', numericValue: 2024 },
+            {
+              key: 'categories',
+              stringListValue: {
+                values: ['finance', 'legal'],
+              },
+            },
+          ],
+        }),
+      );
+    });
   });
 });
