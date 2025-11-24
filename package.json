@@ -33,6 +33,7 @@
     "test:unit": "jest --testPathPattern=test/unit",
     "test:integration": "jest --testPathPattern=test/integration",
     "test:e2e": "jest --testPathPattern=test/e2e",
+    "test:performance": "jest --testPathPattern=test/performance --runInBand",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "prepare": "husky install",
