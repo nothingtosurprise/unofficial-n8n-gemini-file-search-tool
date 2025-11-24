@@ -219,6 +219,8 @@ export async function geminiResumableUpload(
   const uploadUrl = `https://generativelanguage.googleapis.com/upload/v1beta/${storeName}:uploadToFileSearchStore`;
 
   // Start upload session
+  // Note: Using helpers.request here because we need resolveWithFullResponse
+  // which is not supported by httpRequestWithAuthentication
   const startResponse = (await this.helpers.request({
     method: 'POST',
     url: `${uploadUrl}?key=${credentials.apiKey as string}`,
@@ -235,7 +237,7 @@ export async function geminiResumableUpload(
 
   const uploadSessionUrl = startResponse.headers['x-goog-upload-url'] as string;
 
-  // Upload file data
+  // Upload file data to the session URL (this URL is pre-authenticated by Google)
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return this.helpers.request({
     method: 'POST',
