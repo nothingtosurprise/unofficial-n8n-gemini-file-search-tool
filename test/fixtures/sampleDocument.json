@@ -1,0 +1,12 @@
+{
+  "name": "stores/test-store-fixture/documents/doc-fixture",
+  "displayName": "sample-document.pdf",
+  "mimeType": "application/pdf",
+  "sizeBytes": "2048",
+  "createTime": "2024-01-01T00:00:00Z",
+  "updateTime": "2024-01-01T00:00:00Z",
+  "metadata": {
+    "author": "Test Author",
+    "category": "test"
+  }
+}
