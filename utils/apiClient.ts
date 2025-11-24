@@ -5,9 +5,23 @@ import {
   NodeApiError,
   NodeOperationError,
 } from 'n8n-workflow';
+import { Operation } from './types';
+
+interface PaginatedResponse {
+  nextPageToken?: string;
+  [key: string]: unknown;
+}
+
+interface UploadStartResponse {
+  headers: {
+    'x-goog-upload-url'?: string;
+    [key: string]: unknown;
+  };
+}
 
 /**
  * Makes a request to the Gemini API
+ * Note: Return type must be 'any' due to n8n's dynamic response structures
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function geminiApiRequest(
@@ -19,23 +33,28 @@ export async function geminiApiRequest(
 ): Promise<any> {
   const credentials = await this.getCredentials('geminiApi');
 
+  // Method must be 'any' as n8n accepts various HTTP method types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+  const requestMethod: any = method;
+
   const options = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-    method: method as any,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    method: requestMethod,
     body,
     qs: {
       ...qs,
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string, @typescript-eslint/restrict-template-expressions
-      key: credentials.apiKey,
+      key: credentials.apiKey as string,
     },
     uri: `https://generativelanguage.googleapis.com/v1beta${endpoint}`,
     json: true,
   };
 
   try {
+    // Must return 'any' as response structure varies by endpoint
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return await this.helpers.request(options);
   } catch (error) {
+    // NodeApiError constructor expects error object with compatible structure
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
     throw new NodeApiError(this.getNode(), error as any);
   }
@@ -43,6 +62,7 @@ export async function geminiApiRequest(
 
 /**
  * Makes paginated requests to retrieve all items
+ * Note: Return type must be 'any[]' as response structure varies by endpoint
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function geminiApiRequestAllItems(
@@ -53,26 +73,38 @@ export async function geminiApiRequestAllItems(
   body: IDataObject = {},
   qs: IDataObject = {},
 ): Promise<any[]> {
-  const returnData: IDataObject[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  let responseData;
+  // Must use 'any[]' as items can be Documents, FileSearchStores, etc.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const returnData: any[] = [];
   qs.pageSize = qs.pageSize || 20;
 
+  let responseData: PaginatedResponse;
+
   do {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    responseData = await geminiApiRequest.call(this, method, endpoint, body, qs);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    responseData = (await geminiApiRequest.call(
+      this,
+      method,
+      endpoint,
+      body,
+      qs,
+    )) as PaginatedResponse;
     qs.pageToken = responseData.nextPageToken;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-    returnData.push(...(responseData[propertyName] || []));
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const items = responseData[propertyName];
+    if (Array.isArray(items)) {
+      // Items are typed as unknown[], but we know they match the expected type
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      returnData.push(...items);
+    }
   } while (responseData.nextPageToken);
 
+  // Must return 'any[]' as item type varies by endpoint
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return returnData;
 }
 
 /**
  * Performs a resumable upload for large files
+ * Note: Return type must be 'any' as response structure is defined by Google API
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function geminiResumableUpload(
@@ -83,15 +115,12 @@ export async function geminiResumableUpload(
   metadata: IDataObject,
 ): Promise<any> {
   const credentials = await this.getCredentials('geminiApi');
-  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-base-to-string
   const uploadUrl = `https://generativelanguage.googleapis.com/upload/v1beta/${storeName}:uploadToFileSearchStore`;
 
   // Start upload session
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const startResponse = await this.helpers.request({
+  const startResponse = (await this.helpers.request({
     method: 'POST',
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-base-to-string
-    url: `${uploadUrl}?key=${credentials.apiKey}`,
+    url: `${uploadUrl}?key=${credentials.apiKey as string}`,
     headers: {
       'X-Goog-Upload-Protocol': 'resumable',
       'X-Goog-Upload-Command': 'start',
@@ -101,16 +130,14 @@ export async function geminiResumableUpload(
     },
     body: JSON.stringify(metadata),
     resolveWithFullResponse: true,
-  });
+  })) as UploadStartResponse;
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-  const uploadSessionUrl = startResponse.headers['x-goog-upload-url'];
+  const uploadSessionUrl = startResponse.headers['x-goog-upload-url'] as string;
 
   // Upload file data
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return this.helpers.request({
     method: 'POST',
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     url: uploadSessionUrl,
     headers: {
       'Content-Length': file.length.toString(),
@@ -124,6 +151,7 @@ export async function geminiResumableUpload(
 
 /**
  * Polls a long-running operation until completion
+ * Note: Return type must be 'any' as response structure varies by operation type
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function pollOperation(
@@ -133,24 +161,21 @@ export async function pollOperation(
   intervalMs: number = 5000,
 ): Promise<any> {
   for (let i = 0; i < maxAttempts; i++) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const operation = await geminiApiRequest.call(this, 'GET', `/${operationName}`);
+    const operation = (await geminiApiRequest.call(this, 'GET', `/${operationName}`)) as Operation;
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (operation.done) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (operation.error) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-base-to-string
         throw new NodeOperationError(
           this.getNode(),
           `Operation failed: ${operation.error.message}`,
           {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            description: operation.error.details,
+            description: operation.error.details
+              ? JSON.stringify(operation.error.details)
+              : undefined,
           },
         );
       }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return operation.response;
     }
 

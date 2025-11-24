@@ -1,0 +1,18 @@
+{
+  "node": "n8n-nodes-base.geminiFileSearchStores",
+  "nodeVersion": "1.0",
+  "codexVersion": "1.0",
+  "categories": ["AI"],
+  "resources": {
+    "credentialDocumentation": [
+      {
+        "url": "https://ai.google.dev/gemini-api/docs/api-key"
+      }
+    ],
+    "primaryDocumentation": [
+      {
+        "url": "https://ai.google.dev/api/file-search/file-search-stores"
+      }
+    ]
+  }
+}
