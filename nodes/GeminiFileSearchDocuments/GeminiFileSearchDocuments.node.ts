@@ -21,6 +21,7 @@ export class GeminiFileSearchDocuments implements INodeType {
     },
     inputs: ['main'],
     outputs: ['main'],
+    usableAsTool: true,
     credentials: [
       {
         name: 'geminiApi',
