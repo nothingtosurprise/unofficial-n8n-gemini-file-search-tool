@@ -22,14 +22,15 @@ interface UploadStartResponse {
 /**
  * Makes an HTTP request to the Google Gemini API with automatic authentication
  *
- * This function handles credential retrieval, request construction, and error wrapping
- * for all Gemini API endpoints. It automatically adds the API key to query string parameters.
+ * This function uses n8n's httpRequestWithAuthentication helper to automatically
+ * inject the API key as a query parameter. The credential's authenticate property
+ * defines how the API key is added to each request.
  *
  * @param this - n8n execution context (IExecuteFunctions or ILoadOptionsFunctions)
  * @param method - HTTP method (GET, POST, DELETE, etc.)
  * @param endpoint - API endpoint path starting with / (e.g., '/fileSearchStores')
  * @param body - Request body data (default: empty object)
- * @param qs - Query string parameters (default: empty object, API key added automatically)
+ * @param qs - Query string parameters (default: empty object, API key added automatically by credential)
  * @returns Promise resolving to API response (structure varies by endpoint)
  * @throws {NodeApiError} When the API request fails or returns an error response
  *
@@ -61,8 +62,6 @@ export async function geminiApiRequest(
   body: IDataObject = {},
   qs: IDataObject = {},
 ): Promise<any> {
-  const credentials = await this.getCredentials('geminiApi');
-
   // Method must be 'any' as n8n accepts various HTTP method types
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
   const requestMethod: any = method;
@@ -71,18 +70,16 @@ export async function geminiApiRequest(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     method: requestMethod,
     body,
-    qs: {
-      ...qs,
-      key: credentials.apiKey as string,
-    },
-    uri: `https://generativelanguage.googleapis.com/v1beta${endpoint}`,
+    qs,
+    url: `https://generativelanguage.googleapis.com/v1beta${endpoint}`,
     json: true,
   };
 
   try {
+    // Use httpRequestWithAuthentication to automatically inject credentials
     // Must return 'any' as response structure varies by endpoint
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return await this.helpers.request(options);
+    return await this.helpers.httpRequestWithAuthentication.call(this, 'geminiApi', options);
   } catch (error) {
     // NodeApiError constructor expects error object with compatible structure
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument

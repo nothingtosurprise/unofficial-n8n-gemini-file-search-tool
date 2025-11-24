@@ -45,8 +45,8 @@ export class GeminiApi implements ICredentialType {
   authenticate: IAuthenticateGeneric = {
     type: 'generic',
     properties: {
-      headers: {
-        'x-goog-api-key': '={{$credentials.apiKey}}',
+      qs: {
+        key: '={{$credentials.apiKey}}',
       },
     },
   };
