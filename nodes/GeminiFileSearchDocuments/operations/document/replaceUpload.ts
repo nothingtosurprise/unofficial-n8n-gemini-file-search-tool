@@ -243,12 +243,33 @@ export async function replaceUpload(
 
   // Final filter to ensure all metadata items have valid values
   // (merged metadata from old documents might have invalid entries)
-  const validCustomMetadata = newCustomMetadata.filter(
-    (item: CustomMetadata) =>
-      item.stringValue !== undefined ||
-      item.numericValue !== undefined ||
-      (item.stringListValue?.values && item.stringListValue.values.length > 0),
-  );
+  // Also check for empty strings which the API rejects
+  const validCustomMetadata = newCustomMetadata
+    .filter(
+      (item: CustomMetadata) =>
+        (item.stringValue !== undefined && item.stringValue !== '') ||
+        (item.numericValue !== undefined && !isNaN(item.numericValue)) ||
+        (item.stringListValue?.values && item.stringListValue.values.length > 0),
+    )
+    // Remove any extra undefined fields to ensure clean structure
+    .map((item: CustomMetadata) => {
+      const clean: CustomMetadata = { key: item.key };
+      if (item.stringValue !== undefined && item.stringValue !== '') {
+        clean.stringValue = item.stringValue;
+      } else if (item.numericValue !== undefined && !isNaN(item.numericValue)) {
+        clean.numericValue = item.numericValue;
+      } else if (item.stringListValue?.values && item.stringListValue.values.length > 0) {
+        clean.stringListValue = item.stringListValue;
+      }
+      return clean;
+    })
+    // Final safety check - only items with exactly one value type
+    .filter(
+      (item: CustomMetadata) =>
+        item.stringValue !== undefined ||
+        item.numericValue !== undefined ||
+        item.stringListValue !== undefined,
+    );
 
   if (validCustomMetadata.length > 0) {
     metadata.customMetadata = validCustomMetadata;
