@@ -299,7 +299,7 @@ The List operation supports **client-side** metadata filtering, allowing you to 
 
 | Operator | Syntax | Description | Case Sensitive |
 |----------|--------|-------------|----------------|
-| Equals | `key="value"` | Exact string match | Yes |
+| Equals | `key="value"` | Exact string match | No |
 | Contains | `key~"value"` | Substring match | No |
 | Starts with | `key^="value"` | Prefix match | No |
 | Ends with | `key$="value"` | Suffix match | No |
@@ -348,7 +348,7 @@ filename~"report" AND year>=2020
 filename^="A" AND filename~"2024" AND filename$=".pdf"
 ```
 
-**Note:** The contains (`~`), starts with (`^=`), and ends with (`$=`) operators are **case-insensitive** for convenience. The exact match (`=`) operator is case-sensitive.
+**Note:** All string operators (`=`, `~`, `^=`, `$=`) are **case-insensitive** for convenience.
 
 #### Use Cases
 

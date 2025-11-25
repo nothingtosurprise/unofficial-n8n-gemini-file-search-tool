@@ -4,7 +4,7 @@ import { CustomMetadata, Document } from './types';
  * Evaluates if a document matches a metadata filter expression
  *
  * Supports AIP-160 style filters with parentheses:
- * - String equality: key="value"
+ * - String equality: key="value" (case-insensitive)
  * - String contains: key~"value" (case-insensitive)
  * - String starts with: key^="value" (case-insensitive)
  * - String ends with: key$="value" (case-insensitive)
@@ -178,14 +178,22 @@ function splitByOperator(expression: string, operator: string): string[] {
  * Evaluates a single filter condition against metadata
  */
 function evaluateCondition(metadata: CustomMetadata[], condition: string): boolean {
-  // Match string equality: key="value"
+  // Match string equality: key="value" (case-insensitive)
   const stringEqualityMatch = condition.match(/^(\w+)="([^"]*)"$/);
   if (stringEqualityMatch) {
     const [, key, value] = stringEqualityMatch;
-    return metadata.some(
-      (m) =>
-        m.key === key && (m.stringValue === value || m.stringListValue?.values.includes(value)),
-    );
+    const valueLower = value.toLowerCase();
+    return metadata.some((m) => {
+      if (m.key !== key) return false;
+      // Handle empty strings and regular strings
+      if (m.stringValue !== undefined) {
+        return m.stringValue.toLowerCase() === valueLower;
+      }
+      if (m.stringListValue?.values) {
+        return m.stringListValue.values.some((v) => v.toLowerCase() === valueLower);
+      }
+      return false;
+    });
   }
 
   // Match string contains: key~"value" (case-insensitive)

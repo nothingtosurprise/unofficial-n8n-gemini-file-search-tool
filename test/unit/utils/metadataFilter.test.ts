@@ -20,6 +20,13 @@ describe('metadataFilter', () => {
         expect(matchesFilter(doc, 'author="Latour"')).toBe(true);
       });
 
+      it('should be case-insensitive', () => {
+        const doc = createDocument([{ key: 'author', stringValue: 'Latour' }]);
+        expect(matchesFilter(doc, 'author="latour"')).toBe(true);
+        expect(matchesFilter(doc, 'author="LATOUR"')).toBe(true);
+        expect(matchesFilter(doc, 'author="LaTouR"')).toBe(true);
+      });
+
       it('should not match different string value', () => {
         const doc = createDocument([{ key: 'author', stringValue: 'Callon' }]);
         expect(matchesFilter(doc, 'author="Latour"')).toBe(false);
