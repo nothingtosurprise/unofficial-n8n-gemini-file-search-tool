@@ -1,5 +1,5 @@
 import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
-import { geminiApiRequest } from '../../../../utils/apiClient';
+import { geminiApiRequest, geminiApiRequestAllItems } from '../../../../utils/apiClient';
 import { validateMetadataFilter } from '../../../../utils/validators';
 import { Document } from '../../../../utils/types';
 
@@ -21,8 +21,12 @@ interface QueryResponse {
       /** Retrieved chunks with source information */
       groundingChunks?: Array<{
         retrievedContext?: {
-          uri?: string;
+          /** Document title (displayName) */
           title?: string;
+          /** Text snippet from the document chunk */
+          text?: string;
+          /** File Search Store name containing the document */
+          fileSearchStore?: string;
           /** Document metadata (added when includeSourceMetadata is enabled) */
           documentMetadata?: Document;
         };
@@ -173,40 +177,10 @@ export async function query(this: IExecuteFunctions, index: number): Promise<Que
 }
 
 /**
- * Extracts the document resource name from various URI formats in grounding chunks
- *
- * The URI in groundingChunks.retrievedContext can be in different formats:
- * - Full resource name: 'fileSearchStores/store-id/documents/doc-id'
- * - URL format: 'https://...fileSearchStores/store-id/documents/doc-id...'
- * - Other formats that may contain the document path
- *
- * @param uri - The URI from retrievedContext
- * @returns The document resource name or null if not extractable
- */
-function extractDocumentName(uri: string): string | null {
-  if (!uri) return null;
-
-  // Pattern to match fileSearchStores/.../documents/...
-  const pattern = /(fileSearchStores\/[^/]+\/documents\/[^/?#\s]+)/;
-  const match = uri.match(pattern);
-
-  if (match) {
-    return match[1];
-  }
-
-  // If the URI itself looks like a resource name
-  if (uri.startsWith('fileSearchStores/') && uri.includes('/documents/')) {
-    return uri;
-  }
-
-  return null;
-}
-
-/**
  * Enriches grounding chunks with full document metadata
  *
- * Fetches document details for each unique source document referenced
- * in the grounding response and adds it to the retrievedContext.
+ * Since the grounding response only provides fileSearchStore and title (displayName),
+ * we need to list documents in each store and match by title to get full metadata.
  *
  * @param this - n8n execution context
  * @param response - The query response to enrich
@@ -222,39 +196,60 @@ async function enrichGroundingChunksWithMetadata(
     const groundingChunks = candidate.groundingMetadata?.groundingChunks;
     if (!groundingChunks?.length) continue;
 
-    // Collect unique document names to fetch
-    const documentNamesToFetch = new Map<string, number[]>();
+    // Collect unique store + title combinations to look up
+    const storeDocumentsToFetch = new Map<string, Set<string>>();
+    const chunkIndicesByStoreTitle = new Map<string, number[]>();
 
     for (let i = 0; i < groundingChunks.length; i++) {
       const chunk = groundingChunks[i];
-      const uri = chunk.retrievedContext?.uri;
-      if (!uri) continue;
+      const storeName = chunk.retrievedContext?.fileSearchStore;
+      const title = chunk.retrievedContext?.title;
 
-      const docName = extractDocumentName(uri);
-      if (docName) {
-        if (!documentNamesToFetch.has(docName)) {
-          documentNamesToFetch.set(docName, []);
-        }
-        documentNamesToFetch.get(docName)!.push(i);
+      if (!storeName || !title) continue;
+
+      // Track which stores we need to list
+      if (!storeDocumentsToFetch.has(storeName)) {
+        storeDocumentsToFetch.set(storeName, new Set());
       }
+      storeDocumentsToFetch.get(storeName)!.add(title);
+
+      // Track chunk indices by store+title for later assignment
+      const key = `${storeName}|||${title}`;
+      if (!chunkIndicesByStoreTitle.has(key)) {
+        chunkIndicesByStoreTitle.set(key, []);
+      }
+      chunkIndicesByStoreTitle.get(key)!.push(i);
     }
 
-    // Fetch metadata for each unique document
-    const metadataCache = new Map<string, Document>();
+    // Fetch documents from each store and build metadata cache
+    const metadataByStoreTitle = new Map<string, Document>();
 
-    for (const docName of documentNamesToFetch.keys()) {
+    for (const [storeName, titlesToFind] of storeDocumentsToFetch.entries()) {
       try {
-        const doc = (await geminiApiRequest.call(this, 'GET', `/${docName}`)) as Document;
-        metadataCache.set(docName, doc);
+        // List all documents in the store
+        const documents = (await geminiApiRequestAllItems.call(
+          this,
+          'documents',
+          'GET',
+          `/${storeName}/documents`,
+        )) as Document[];
+
+        // Match documents by displayName (title)
+        for (const doc of documents) {
+          if (doc.displayName && titlesToFind.has(doc.displayName)) {
+            const key = `${storeName}|||${doc.displayName}`;
+            metadataByStoreTitle.set(key, doc);
+          }
+        }
       } catch {
-        // Document may not exist or be accessible, skip silently
+        // Store may not be accessible, skip silently
         continue;
       }
     }
 
     // Add metadata to grounding chunks
-    for (const [docName, indices] of documentNamesToFetch.entries()) {
-      const metadata = metadataCache.get(docName);
+    for (const [key, indices] of chunkIndicesByStoreTitle.entries()) {
+      const metadata = metadataByStoreTitle.get(key);
       if (metadata) {
         for (const idx of indices) {
           if (groundingChunks[idx].retrievedContext) {
