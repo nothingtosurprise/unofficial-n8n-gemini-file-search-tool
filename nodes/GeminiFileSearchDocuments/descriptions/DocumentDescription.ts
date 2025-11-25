@@ -570,4 +570,17 @@ export const documentFields: INodeProperties[] = [
     description: 'Filter expression in AIP-160 format',
     placeholder: 'author="John Doe" AND year>=2023',
   },
+  {
+    displayName: 'Include Source Metadata',
+    name: 'includeSourceMetadata',
+    type: 'boolean',
+    default: false,
+    displayOptions: {
+      show: {
+        operation: ['query'],
+      },
+    },
+    description:
+      'When enabled, fetches the full document metadata (customMetadata, displayName, state, etc.) for each source document referenced in the grounding response. This adds additional API calls but provides complete source information. The metadata is added to each groundingChunk under a "documentMetadata" field.',
+  },
 ];
