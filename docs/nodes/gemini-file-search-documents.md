@@ -234,7 +234,7 @@ Same structure as [Upload Document](#upload-document), but the operation type is
 
 ### List Documents
 
-Lists all documents in a File Search store with optional pagination.
+Lists all documents in a File Search store with optional pagination and client-side metadata filtering.
 
 #### Parameters
 
@@ -243,6 +243,7 @@ Lists all documents in a File Search store with optional pagination.
 | Store | string | Yes | — | Resource name of the store |
 | Return All | boolean | No | false | Whether to return all documents |
 | Limit | number | No | 10 | Maximum documents to return (1-20) |
+| Metadata Filter | string | No | — | Client-side filter expression (see [List Metadata Filtering](#list-metadata-filtering)) |
 
 #### Returns
 
@@ -290,6 +291,65 @@ An array of document objects:
 | `STATE_ACTIVE` | Document is ready for search |
 | `STATE_FAILED` | Processing failed (check error details) |
 
+#### List Metadata Filtering
+
+The List operation supports **client-side** metadata filtering, allowing you to filter documents after retrieval. This is different from the Query operation which uses server-side filtering.
+
+**Supported Operators:**
+
+| Operator | Syntax | Description | Case Sensitive |
+|----------|--------|-------------|----------------|
+| Equals | `key="value"` | Exact string match | Yes |
+| Contains | `key~"value"` | Substring match | No |
+| Starts with | `key^="value"` | Prefix match | No |
+| Ends with | `key$="value"` | Suffix match | No |
+| Greater than | `key>number` | Numeric comparison | — |
+| Greater or equal | `key>=number` | Numeric comparison | — |
+| Less than | `key<number` | Numeric comparison | — |
+| Less or equal | `key<=number` | Numeric comparison | — |
+| Numeric equals | `key=number` | Numeric comparison | — |
+
+**Logical Operators:**
+
+| Operator | Description |
+|----------|-------------|
+| `AND` | Both conditions must match |
+| `OR` | Either condition matches |
+| `()` | Grouping for precedence |
+
+**Examples:**
+
+```
+# Find documents containing "Latour" in filename (case-insensitive)
+filename~"Latour"
+
+# Find documents from 2024
+filename~"2024"
+
+# Find all PDF files
+filename$=".pdf"
+
+# Find documents starting with specific author
+filename^="Acselrad"
+
+# Combine with AND/OR
+filename~"Actor-network" AND filename$=".pdf"
+
+# Find documents by author OR year
+filename~"Latour" OR filename~"2023"
+
+# Complex expressions with parentheses
+(filename~"Latour" OR filename~"Callon") AND filename$=".pdf"
+
+# Combine string and numeric filters
+filename~"report" AND year>=2020
+
+# Multiple conditions
+filename^="A" AND filename~"2024" AND filename$=".pdf"
+```
+
+**Note:** The contains (`~`), starts with (`^=`), and ends with (`$=`) operators are **case-insensitive** for convenience. The exact match (`=`) operator is case-sensitive.
+
 #### Use Cases
 
 - Auditing documents in a store
@@ -297,6 +357,8 @@ An array of document objects:
 - Building document management dashboards
 - Verifying upload success
 - Calculating storage usage
+- **Filtering documents by filename patterns**
+- **Finding documents by metadata values**
 
 #### Notes
 
@@ -304,6 +366,8 @@ An array of document objects:
 - Maximum 20 documents per page (API limit)
 - "Return All" handles pagination automatically
 - Metadata included in response
+- **Metadata filtering is applied client-side after retrieval**
+- **For server-side filtering, use the Query operation instead**
 
 ---
 
@@ -494,7 +558,11 @@ A response object containing the AI-generated answer with cited sources:
 }
 ```
 
-#### Metadata Filtering
+#### Query Metadata Filtering (Server-Side)
+
+The Query operation uses **server-side** metadata filtering via Google's AIP-160 format. Filters are applied by the API before documents are retrieved for the AI model.
+
+> **Note:** This is different from the [List operation's client-side filtering](#list-metadata-filtering), which supports additional operators like contains (`~`), starts with (`^=`), and ends with (`$=`).
 
 Use AIP-160 format to filter documents by metadata before querying:
 
@@ -1025,6 +1093,6 @@ Query Configuration:
 
 ---
 
-**Last Updated**: 2024-11-24
+**Last Updated**: 2025-11-25
 **Node Version**: 1.0.0
 **API Version**: v1beta
