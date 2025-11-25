@@ -19,16 +19,21 @@ Community nodes for integrating Google's Gemini File Search Tool API with n8n wo
 - **Upload Documents**: Upload files with resumable upload support (up to 100MB)
   - Binary data support from n8n workflows
   - Custom chunking configuration (chunk size, overlap)
-  - Metadata attachment (AIP-160 filter format)
+  - Metadata attachment (up to 20 custom key-value pairs)
 - **Import Documents**: Import files from Google Files API
-- **List Documents**: Paginated document listing with filtering
+- **List Documents**: Paginated document listing with metadata filtering
 - **Get Document Details**: Retrieve specific document information
 - **Delete Documents**: Remove documents from stores
-- **Query Documents**: Perform RAG-based semantic search
-  - Natural language queries
+- **Query Documents**: Perform RAG-based semantic search using Gemini models
+  - Natural language queries with system prompts
+  - Multiple model support (Gemini 2.5 Flash, Pro, Gemini 3 Pro Preview)
   - Metadata filtering (AIP-160 format)
-  - Configurable result limits
-  - Citation tracking
+  - Full grounding response with citations and source attribution
+  - **Include Source Metadata**: Optionally fetch full document metadata for cited sources
+- **Replace Upload**: Upload new document and delete old one(s) atomically
+  - Match by display name, custom filename, or metadata key-value
+  - Preserve and merge metadata from old document
+  - Multiple merge strategies (prefer new, prefer old, merge all)
 
 ## Installation
 
@@ -49,8 +54,8 @@ npm install n8n-nodes-gemini-file-search
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/n8n-nodes-gemini-file-search.git
-cd n8n-nodes-gemini-file-search
+git clone https://github.com/Brada-io/n8n-nodes-gemini-file-search-tool.git
+cd n8n-nodes-gemini-file-search-tool
 
 # Install dependencies
 npm install
@@ -84,15 +89,66 @@ Add the **Gemini File Search Documents** node:
 - **Operation**: Upload Document
 - **Store Name**: (output from step 2)
 - **Binary Property**: Select your file input
-- **Metadata** (optional): Add custom metadata for filtering
+- **Custom Metadata** (optional): Add key-value pairs for filtering
 
 ### 4. Query Documents
 
 Add another **Gemini File Search Documents** node:
 - **Operation**: Query Documents
-- **Store Name**: (output from step 2)
+- **Model**: Gemini 2.5 Flash (or Pro for complex queries)
+- **Store Names**: (comma-separated list of stores to search)
 - **Query**: "What is the main topic discussed?"
-- **Result Limit**: 5
+- **Include Source Metadata**: Enable to get full document details with citations
+
+## Query Response Structure
+
+The Query operation uses Gemini's RAG (Retrieval-Augmented Generation) capabilities. The response includes:
+
+```javascript
+{
+  "candidates": [{
+    "content": {
+      "parts": [{ "text": "The AI-generated answer..." }]
+    },
+    "groundingMetadata": {
+      "groundingChunks": [{
+        "retrievedContext": {
+          "title": "Document Name",
+          "text": "Relevant chunk content...",
+          "fileSearchStore": "fileSearchStores/store-id",
+          // When "Include Source Metadata" is enabled:
+          "documentMetadata": {
+            "name": "fileSearchStores/store-id/documents/doc-id",
+            "displayName": "Document Name",
+            "customMetadata": [
+              { "key": "author", "stringValue": "John Doe" },
+              { "key": "version", "numericValue": 2.0 }
+            ],
+            "state": "STATE_ACTIVE",
+            "mimeType": "application/pdf"
+          }
+        }
+      }],
+      "groundingSupports": [{
+        "segment": { "text": "cited text segment" },
+        "groundingChunkIndices": [0],
+        "confidenceScores": [0.95]
+      }]
+    }
+  }],
+  "usageMetadata": {
+    "totalTokenCount": 1500
+  }
+}
+```
+
+### Accessing Response Data in n8n
+
+- **Answer**: `$json.candidates[0].content.parts[0].text`
+- **Source Documents**: `$json.candidates[0].groundingMetadata.groundingChunks`
+- **Citations**: `$json.candidates[0].groundingMetadata.groundingSupports`
+- **Document Metadata**: `$json.candidates[0].groundingMetadata.groundingChunks[0].retrievedContext.documentMetadata`
+- **Token Usage**: `$json.usageMetadata.totalTokenCount`
 
 ## Configuration
 
@@ -100,24 +156,24 @@ Add another **Gemini File Search Documents** node:
 
 When uploading documents, you can customize how documents are split:
 
-```json
-{
-  "chunkSize": 1000,
-  "chunkOverlap": 100
-}
-```
+- **Max Tokens Per Chunk**: Number of tokens per chunk (default: 200)
+- **Max Overlap Tokens**: Number of overlapping tokens between chunks (default: 20)
 
-- **chunkSize**: Number of tokens per chunk (default: 1000)
-- **chunkOverlap**: Number of overlapping tokens between chunks (default: 100)
+### Custom Metadata
+
+Documents support up to 20 custom metadata key-value pairs with three value types:
+- **String**: Text values
+- **Number**: Numeric values
+- **String List**: Comma-separated list of values
 
 ### Metadata Filtering
 
-Metadata follows the [AIP-160 filtering format](https://google.aip.dev/160):
+Metadata filtering follows the [AIP-160 format](https://google.aip.dev/160):
 
 **Examples:**
 ```
-name="important_doc"
-category="financial" AND year=2024
+author="John Doe"
+category="financial" AND year>=2024
 status="active" OR priority="high"
 tags:*="urgent"
 ```
@@ -129,20 +185,36 @@ tags:*="urgent"
 - `AND`, `OR`, `NOT`: Logical operators
 - `:*=`: Array contains
 
+## Replace Upload Operation
+
+The Replace Upload operation provides an atomic way to update documents (workaround for API limitation that doesn't support direct updates):
+
+### Match Options
+- **None (Upload Only)**: Just upload without deleting any existing documents
+- **Display Name**: Find and delete documents matching the new document's display name
+- **Custom Filename**: Specify a different filename to match against
+- **Metadata Key-Value**: Match documents by a specific metadata field
+
+### Metadata Preservation
+When replacing documents, you can preserve metadata from the old document:
+- **Prefer New**: New metadata overrides old values for same keys
+- **Prefer Old**: Old metadata kept, new values only fill gaps
+- **Merge All**: All unique keys from both old and new are included
+- **Use Old Only**: Only use old metadata, ignore new
+
 ## Documentation
 
 - **[Project Structure](docs/PROJECT_STRUCTURE.md)**: Overview of codebase organization
 - **[API Reference](docs/refs/gemini/)**: Gemini API documentation
   - [File Search Stores](docs/refs/gemini/file-search-stores.md)
   - [Documents](docs/refs/gemini/document.md)
-  - [File Search RAG](docs/refs/gemini/file-search.md)
 - **[Development Guide](docs/specs/)**: Implementation plans and guides
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)**: Common issues and solutions
-- **[Examples](docs/examples/)**: Sample workflows and use cases
 
 ## API Limits
 
 - **File Size**: Up to 100MB per file
+- **Metadata**: Up to 20 custom key-value pairs per document
+- **Display Name**: Up to 512 characters
 - **Store Limit**: Check your Gemini API quota
 - **Rate Limits**: Subject to Gemini API rate limits
 
@@ -150,7 +222,7 @@ tags:*="urgent"
 
 ### Upload Fails for Large Files
 
-**Solution**: Files over 20MB automatically use resumable upload. Ensure your n8n instance has adequate timeout settings.
+**Solution**: Files automatically use resumable upload. Ensure your n8n instance has adequate timeout settings.
 
 ### Metadata Filter Not Working
 
@@ -163,7 +235,13 @@ tags:*="urgent"
 - Try broader queries
 - Check metadata filters aren't too restrictive
 
-For more issues, see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+### Custom Metadata Not in Query Response
+
+**Solution**: Enable "Include Source Metadata" option in the Query operation. This adds API calls to fetch full document details for each cited source.
+
+### Null Value Errors in Metadata
+
+**Solution**: The node automatically filters out null/empty metadata values. If using n8n expressions that may return null, they will be safely ignored.
 
 ## Development
 
@@ -201,9 +279,20 @@ npm run format
 .
 ├── nodes/                     # Node implementations
 │   ├── GeminiFileSearchStores/
+│   │   ├── GeminiFileSearchStores.node.ts
+│   │   ├── descriptions/
+│   │   └── operations/
 │   └── GeminiFileSearchDocuments/
+│       ├── GeminiFileSearchDocuments.node.ts
+│       ├── descriptions/
+│       └── operations/
 ├── credentials/               # Credential definitions
+│   └── GeminiApi.credentials.ts
 ├── utils/                     # Shared utilities
+│   ├── apiClient.ts          # API request helpers
+│   ├── validators.ts         # Input validation
+│   ├── metadataFilter.ts     # AIP-160 filter parsing
+│   └── types.ts              # TypeScript interfaces
 ├── test/                      # Test suites
 │   ├── unit/
 │   ├── integration/
@@ -215,9 +304,7 @@ See [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) for complete structur
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-### Quick Contribution Guide
+Contributions are welcome! Please follow these guidelines:
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/my-feature`
@@ -230,7 +317,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 ## Testing
 
-This project maintains high test coverage (>95%):
+This project maintains high test coverage:
 
 ```bash
 # Run all tests
@@ -238,12 +325,6 @@ npm test
 
 # Unit tests only
 npm run test:unit
-
-# Integration tests
-npm run test:integration
-
-# E2E tests
-npm run test:e2e
 
 # Coverage report
 npm run test:coverage
@@ -253,17 +334,11 @@ npm run test:coverage
 
 [MIT License](LICENSE)
 
-Copyright (c) 2025
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Copyright (c) 2025 Brada
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/n8n-nodes-gemini-file-search/issues)
+- **Issues**: [GitHub Issues](https://github.com/Brada-io/n8n-nodes-gemini-file-search-tool/issues)
 - **Documentation**: [docs/](docs/)
 - **n8n Community**: [community.n8n.io](https://community.n8n.io)
 
@@ -277,14 +352,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 - [n8n](https://github.com/n8n-io/n8n) - Workflow automation platform
 - [n8n-nodes-starter](https://github.com/n8n-io/n8n-nodes-starter) - Template for n8n nodes
-
-## Roadmap
-
-- [ ] Support for additional file formats
-- [ ] Batch upload operations
-- [ ] Advanced metadata search UI
-- [ ] Store templates
-- [ ] Performance analytics
 
 ---
 

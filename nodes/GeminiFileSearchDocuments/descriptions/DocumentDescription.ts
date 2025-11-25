@@ -580,6 +580,7 @@ export const documentFields: INodeProperties[] = [
         operation: ['query'],
       },
     },
+    hint: 'Adds one API call per unique source document to fetch its full metadata',
     description:
       'When enabled, fetches the full document metadata (customMetadata, displayName, state, etc.) for each source document referenced in the grounding response. This adds additional API calls but provides complete source information. The metadata is added to each groundingChunk under a "documentMetadata" field.',
   },

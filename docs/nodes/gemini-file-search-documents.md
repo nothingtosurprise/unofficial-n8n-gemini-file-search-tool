@@ -499,9 +499,11 @@ Performs semantic search across documents using a Gemini model. This is the core
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | Model | options | Yes | `gemini-2.5-flash` | Gemini model to use for query |
+| System Prompt | string | No | — | Instructions to guide the AI model response |
 | Query | string | Yes | — | Natural language question or search query |
 | Store Names | string | Yes | — | Comma-separated list of store names to search |
 | Metadata Filter | string | No | — | Filter expression in AIP-160 format |
+| Include Source Metadata | boolean | No | false | Fetch full document metadata for cited sources |
 
 #### Available Models
 
@@ -522,17 +524,31 @@ A response object containing the AI-generated answer with cited sources:
       "content": {
         "parts": [
           {
-            "text": "Based on the documents, transformer models use self-attention mechanisms to process input sequences in parallel, making them more efficient than recurrent neural networks. The key innovation is the multi-head attention layer that allows the model to focus on different parts of the input simultaneously.\n\nSources:\n- Attention Is All You Need.pdf (page 3)\n- Transformer Architecture Overview.md (section 2.1)"
+            "text": "Based on the documents, transformer models use self-attention mechanisms..."
           }
         ],
         "role": "model"
       },
       "finishReason": "STOP",
       "groundingMetadata": {
-        "retrievedContext": [
+        "groundingChunks": [
           {
-            "uri": "fileSearchStores/research-abc/documents/paper-xyz",
-            "title": "Attention Is All You Need.pdf"
+            "retrievedContext": {
+              "title": "Attention Is All You Need.pdf",
+              "text": "The dominant sequence transduction models are based on complex...",
+              "fileSearchStore": "fileSearchStores/research-abc"
+            }
+          }
+        ],
+        "groundingSupports": [
+          {
+            "segment": {
+              "startIndex": 0,
+              "endIndex": 150,
+              "text": "Based on the documents, transformer models use self-attention mechanisms..."
+            },
+            "groundingChunkIndices": [0],
+            "confidenceScores": [0.95]
           }
         ]
       }
@@ -545,6 +561,39 @@ A response object containing the AI-generated answer with cited sources:
   }
 }
 ```
+
+#### Include Source Metadata
+
+When **Include Source Metadata** is enabled, each grounding chunk includes full document details:
+
+```json
+{
+  "groundingChunks": [
+    {
+      "retrievedContext": {
+        "title": "Attention Is All You Need.pdf",
+        "text": "The dominant sequence transduction models...",
+        "fileSearchStore": "fileSearchStores/research-abc",
+        "documentMetadata": {
+          "name": "fileSearchStores/research-abc/documents/paper-xyz",
+          "displayName": "Attention Is All You Need.pdf",
+          "customMetadata": [
+            { "key": "author", "stringValue": "Vaswani et al." },
+            { "key": "year", "numericValue": 2017 }
+          ],
+          "state": "STATE_ACTIVE",
+          "mimeType": "application/pdf",
+          "sizeBytes": "2097152",
+          "createTime": "2025-11-15T14:20:00Z",
+          "updateTime": "2025-11-15T14:20:45Z"
+        }
+      }
+    }
+  ]
+}
+```
+
+> **Note**: Enabling this option adds one API call per unique source document to fetch its metadata. This is useful when you need to access custom metadata (author, category, version, etc.) from cited sources.
 
 #### Example Query
 
@@ -684,6 +733,139 @@ Query operations consume tokens based on:
 - Keep queries concise but clear
 - Use Flash model for most queries
 - Batch related questions when possible
+
+---
+
+### Replace Upload
+
+Uploads a new document and optionally deletes existing document(s) based on matching criteria. This is a workaround for the Google API limitation that doesn't support direct document updates.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| Store | string | Yes | — | Resource name of the target store |
+| Input Binary Field | string | Yes | `data` | Name of the binary property containing the file |
+| Display Name | string | Yes | — | Display name for the new document |
+| Delete Old Document By | options | No | `none` | How to find old document(s) to delete |
+| Old Document Filename | string | Conditional | — | Filename to match (when using Custom Filename) |
+| Metadata Key | string | Conditional | — | Metadata key to match (when using Metadata) |
+| Metadata Value | string | Conditional | — | Metadata value to match (when using Metadata) |
+| Delete All Matches | boolean | No | false | Delete all matching documents (metadata only) |
+| Preserve Old Document Metadata | boolean | No | false | Copy metadata from old document |
+| Metadata Merge Strategy | options | Conditional | `preferNew` | How to merge old and new metadata |
+| Custom Metadata | collection | No | — | New metadata key-value pairs |
+| Chunking Options | collection | No | — | Configuration for document chunking |
+| Force Delete | boolean | No | true | Force delete even if chunks exist |
+| Wait for Completion | boolean | No | true | Wait for upload to complete |
+
+#### Delete Old Document By Options
+
+| Option | Description |
+|--------|-------------|
+| `None (Upload Only)` | Just upload without deleting any existing documents |
+| `Display Name` | Find and delete documents matching the Display Name field |
+| `Custom Filename` | Find and delete documents matching a different filename |
+| `Metadata Key-Value` | Find and delete documents by specific metadata (can match multiple) |
+
+#### Metadata Merge Strategies
+
+When **Preserve Old Document Metadata** is enabled:
+
+| Strategy | Description |
+|----------|-------------|
+| `Prefer New` | New metadata values override old values for same keys |
+| `Prefer Old` | Old metadata kept, new values only fill gaps |
+| `Merge All` | All unique keys from both old and new are included |
+| `Use Old Only` | Only use old metadata, ignore new metadata |
+
+#### Returns
+
+A comprehensive result object:
+
+```json
+{
+  "upload": {
+    "name": "fileSearchStores/store-abc/operations/op-123",
+    "done": true,
+    "response": {
+      "name": "fileSearchStores/store-abc/documents/new-doc-xyz",
+      "displayName": "Report v2.pdf",
+      "state": "STATE_ACTIVE"
+    }
+  },
+  "deletedDocuments": {
+    "matchBy": "displayName",
+    "matchCriteria": "Report v2.pdf",
+    "totalFound": 1,
+    "totalDeleted": 1,
+    "deleteAllMatches": false,
+    "documents": [
+      {
+        "name": "fileSearchStores/store-abc/documents/old-doc-123",
+        "displayName": "Report v2.pdf",
+        "deleted": true
+      }
+    ]
+  },
+  "metadata": {
+    "preserved": true,
+    "sourceDocument": "fileSearchStores/store-abc/documents/old-doc-123",
+    "strategy": "preferNew",
+    "oldMetadataCount": 3,
+    "newMetadataCount": 2,
+    "finalMetadataCount": 4
+  }
+}
+```
+
+#### Example: Replace by Display Name
+
+```json
+{
+  "storeName": "fileSearchStores/docs-store",
+  "binaryPropertyName": "data",
+  "displayName": "API Documentation v2.pdf",
+  "matchBy": "displayName",
+  "preserveMetadata": true,
+  "metadataMergeStrategy": "preferNew",
+  "customMetadata": {
+    "metadataValues": [
+      { "key": "version", "valueType": "number", "value": "2" }
+    ]
+  }
+}
+```
+
+#### Example: Replace by Metadata
+
+```json
+{
+  "storeName": "fileSearchStores/docs-store",
+  "binaryPropertyName": "data",
+  "displayName": "Monthly Report November.pdf",
+  "matchBy": "metadata",
+  "matchMetadataKey": "reportId",
+  "matchMetadataValue": "monthly-2024-11",
+  "deleteAllMatches": false,
+  "preserveMetadata": true,
+  "metadataMergeStrategy": "mergeAll"
+}
+```
+
+#### Use Cases
+
+1. **Version Updates**: Replace old document versions with new ones
+2. **Content Refresh**: Update documents while preserving metadata
+3. **Atomic Updates**: Delete-then-upload in a single operation
+4. **Metadata Migration**: Merge old metadata with new during updates
+
+#### Notes
+
+- Delete happens **before** upload (ensures old document is removed first)
+- If delete fails, upload still proceeds (errors logged in response)
+- Metadata from first matched document is used when multiple match
+- Maximum 20 metadata items after merge (validation enforced)
 
 ---
 
