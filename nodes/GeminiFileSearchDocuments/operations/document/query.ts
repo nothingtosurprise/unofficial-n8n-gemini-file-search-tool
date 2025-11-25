@@ -2,12 +2,79 @@ import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import { geminiApiRequest } from '../../../../utils/apiClient';
 import { validateMetadataFilter } from '../../../../utils/validators';
 
+/**
+ * Full Gemini generateContent response structure for File Search queries
+ * Includes grounding metadata with citations and source chunks
+ */
 interface QueryResponse {
   candidates?: Array<{
     content?: {
       parts?: Array<{ text?: string }>;
+      role?: string;
     };
+    finishReason?: string;
+    /** Grounding metadata containing citations and sources */
+    groundingMetadata?: {
+      /** Search queries used for grounding */
+      webSearchQueries?: string[];
+      /** Retrieved chunks with source information */
+      groundingChunks?: Array<{
+        retrievedContext?: {
+          uri?: string;
+          title?: string;
+        };
+        web?: {
+          uri?: string;
+          title?: string;
+        };
+      }>;
+      /** Maps response text segments to source chunks */
+      groundingSupports?: Array<{
+        segment?: {
+          startIndex?: number;
+          endIndex?: number;
+          text?: string;
+        };
+        groundingChunkIndices?: number[];
+        confidenceScores?: number[];
+      }>;
+      /** Search entry point for rendering search widget */
+      searchEntryPoint?: {
+        renderedContent?: string;
+      };
+      /** Retrieval metadata for file search */
+      retrievalMetadata?: {
+        googleSearchDynamicRetrievalScore?: number;
+      };
+    };
+    /** Citation metadata (alternative format) */
+    citationMetadata?: {
+      citationSources?: Array<{
+        startIndex?: number;
+        endIndex?: number;
+        uri?: string;
+        license?: string;
+      }>;
+    };
+    index?: number;
+    safetyRatings?: Array<{
+      category?: string;
+      probability?: string;
+    }>;
   }>;
+  promptFeedback?: {
+    safetyRatings?: Array<{
+      category?: string;
+      probability?: string;
+    }>;
+  };
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    totalTokenCount?: number;
+  };
+  modelVersion?: string;
+  // Allow any additional fields the API might return
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
