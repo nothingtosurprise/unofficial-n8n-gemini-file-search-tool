@@ -4,6 +4,7 @@ import { get } from './get';
 import { importFile } from './import';
 import { list } from './list';
 import { query } from './query';
+import { replaceUpload } from './replaceUpload';
 import { upload } from './upload';
 
 // Return type must be 'any' as operations return different types (Document, Operation, Document[], etc.)
@@ -27,6 +28,8 @@ export async function executeDocumentOperation(
       return deleteDocument.call(this, index);
     case 'query':
       return query.call(this, index);
+    case 'replaceUpload':
+      return replaceUpload.call(this, index);
     default:
       throw new Error(`Unknown operation: ${operation}`);
   }

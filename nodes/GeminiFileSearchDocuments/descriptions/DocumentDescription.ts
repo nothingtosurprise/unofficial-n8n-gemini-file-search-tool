@@ -48,6 +48,13 @@ export const documentOperations: INodeProperties[] = [
         description: 'Query documents using Gemini model',
         action: 'Query documents',
       },
+      {
+        name: 'Replace Upload',
+        value: 'replaceUpload',
+        description:
+          'Upload a new document and delete the old one with matching filename (workaround for API limitation)',
+        action: 'Replace upload a document',
+      },
     ],
     default: 'upload',
   },
@@ -63,7 +70,7 @@ export const documentFields: INodeProperties[] = [
     required: true,
     displayOptions: {
       show: {
-        operation: ['upload', 'import', 'list'],
+        operation: ['upload', 'import', 'list', 'replaceUpload'],
       },
     },
     placeholder: 'fileSearchStores/my-store-123',
@@ -79,7 +86,7 @@ export const documentFields: INodeProperties[] = [
     required: true,
     displayOptions: {
       show: {
-        operation: ['upload'],
+        operation: ['upload', 'replaceUpload'],
       },
     },
     description: 'Name of the binary property containing the file to upload',
@@ -91,7 +98,7 @@ export const documentFields: INodeProperties[] = [
     default: '',
     displayOptions: {
       show: {
-        operation: ['upload', 'import'],
+        operation: ['upload', 'import', 'replaceUpload'],
       },
     },
     description: 'Human-readable display name for the document',
@@ -106,7 +113,7 @@ export const documentFields: INodeProperties[] = [
     default: {},
     displayOptions: {
       show: {
-        operation: ['upload', 'import'],
+        operation: ['upload', 'import', 'replaceUpload'],
       },
     },
     description: 'Custom metadata key-value pairs (max 20)',
@@ -177,7 +184,7 @@ export const documentFields: INodeProperties[] = [
     default: {},
     displayOptions: {
       show: {
-        operation: ['upload', 'import'],
+        operation: ['upload', 'import', 'replaceUpload'],
       },
     },
     options: [
@@ -204,10 +211,39 @@ export const documentFields: INodeProperties[] = [
     default: true,
     displayOptions: {
       show: {
-        operation: ['upload', 'import'],
+        operation: ['upload', 'import', 'replaceUpload'],
       },
     },
     description: 'Whether to wait for the upload/import operation to complete',
+  },
+
+  // Replace Upload operation fields
+  {
+    displayName: 'Old Document Filename',
+    name: 'oldDocumentFilename',
+    type: 'string',
+    default: '',
+    required: true,
+    displayOptions: {
+      show: {
+        operation: ['replaceUpload'],
+      },
+    },
+    placeholder: 'document.pdf',
+    description:
+      'The filename (displayName) of the old document to delete after successful upload. The search is case-insensitive.',
+  },
+  {
+    displayName: 'Force Delete',
+    name: 'forceDelete',
+    type: 'boolean',
+    default: true,
+    displayOptions: {
+      show: {
+        operation: ['replaceUpload'],
+      },
+    },
+    description: 'Whether to force delete the old document even if it contains chunks',
   },
 
   // Import operation fields
