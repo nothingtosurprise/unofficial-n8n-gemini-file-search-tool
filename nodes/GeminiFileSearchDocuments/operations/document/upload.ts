@@ -84,15 +84,12 @@ export async function upload(this: IExecuteFunctions, index: number): Promise<Op
     const customMetadata = customMetadataParam.metadataValues
       .map((item: MetadataValue) => {
         const metadataItem: CustomMetadata = { key: item.key };
-        if (item.valueType === 'string' && item.value !== undefined && item.value !== '') {
+        // Check for null, undefined, and empty string (value can come as null from n8n expressions)
+        if (item.valueType === 'string' && item.value != null && item.value !== '') {
           metadataItem.stringValue = item.value;
-        } else if (item.valueType === 'number' && item.value !== undefined && item.value !== '') {
+        } else if (item.valueType === 'number' && item.value != null && item.value !== '') {
           metadataItem.numericValue = parseFloat(item.value);
-        } else if (
-          item.valueType === 'stringList' &&
-          item.values !== undefined &&
-          item.values !== ''
-        ) {
+        } else if (item.valueType === 'stringList' && item.values != null && item.values !== '') {
           metadataItem.stringListValue = {
             values: item.values
               .split(',')
@@ -102,7 +99,7 @@ export async function upload(this: IExecuteFunctions, index: number): Promise<Op
         }
         return metadataItem;
       })
-      // Filter out metadata items that don't have any value set (API requires one of stringValue, numericValue, or stringListValue)
+      // Filter out metadata items that don't have any value set
       .filter(
         (item: CustomMetadata) =>
           item.stringValue !== undefined ||
