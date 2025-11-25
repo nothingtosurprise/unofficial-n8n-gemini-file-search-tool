@@ -31,6 +31,7 @@ interface ChunkingOptionsParam {
 
 interface DeletedDocumentInfo {
   found: boolean;
+  searchedFilename: string;
   documentName?: string;
   displayName?: string;
   message: string;
@@ -160,7 +161,8 @@ export async function replaceUpload(
   // Step 2: Search for old document by filename (displayName)
   let deletedDocumentInfo: DeletedDocumentInfo = {
     found: false,
-    message: 'No document found with the specified filename to delete',
+    searchedFilename: oldDocumentFilename,
+    message: `No document found with filename "${oldDocumentFilename}" to delete`,
   };
 
   // Get all documents from the store to search by displayName
@@ -188,6 +190,7 @@ export async function replaceUpload(
 
     deletedDocumentInfo = {
       found: true,
+      searchedFilename: oldDocumentFilename,
       documentName: matchingDocument.name,
       displayName: matchingDocument.displayName,
       message: `Successfully deleted old document: ${matchingDocument.displayName}`,

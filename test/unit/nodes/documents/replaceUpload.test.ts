@@ -131,6 +131,7 @@ describe('Document ReplaceUpload Operation', () => {
       // Verify result structure
       expect(result.upload).toEqual(mockCompletedDoc);
       expect(result.deletedDocument.found).toBe(true);
+      expect(result.deletedDocument.searchedFilename).toBe('old-document.pdf');
       expect(result.deletedDocument.documentName).toBe(
         'fileSearchStores/test-store/documents/old-doc-456',
       );
@@ -173,6 +174,7 @@ describe('Document ReplaceUpload Operation', () => {
 
       // Assert
       expect(result.deletedDocument.found).toBe(true);
+      expect(result.deletedDocument.searchedFilename).toBe('OLD-DOCUMENT.PDF');
       expect(apiClient.geminiApiRequest).toHaveBeenCalledWith(
         'DELETE',
         '/fileSearchStores/test-store/documents/old-doc',
@@ -225,8 +227,10 @@ describe('Document ReplaceUpload Operation', () => {
       // Assert
       expect(result.upload).toEqual(mockCompletedDoc);
       expect(result.deletedDocument.found).toBe(false);
+      expect(result.deletedDocument.searchedFilename).toBe('nonexistent-document.pdf');
       expect(result.deletedDocument.documentName).toBeUndefined();
       expect(result.deletedDocument.message).toContain('No document found');
+      expect(result.deletedDocument.message).toContain('nonexistent-document.pdf');
 
       // Verify delete was NOT called
       expect(apiClient.geminiApiRequest).not.toHaveBeenCalled();
