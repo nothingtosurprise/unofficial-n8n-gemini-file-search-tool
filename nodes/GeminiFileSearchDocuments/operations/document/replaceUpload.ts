@@ -1,17 +1,26 @@
-import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import {
   geminiApiRequest,
   geminiApiRequestAllItems,
   geminiResumableUpload,
   pollOperation,
 } from '../../../../utils/apiClient';
-import { CustomMetadata, Document, Operation } from '../../../../utils/types';
+import {
+  CustomMetadata,
+  DeletedDocumentDetail,
+  Document,
+  MatchByType,
+  MetadataMergeStrategy,
+  Operation,
+  ReplaceUploadResult,
+} from '../../../../utils/types';
 import {
   validateCustomMetadata,
   validateDisplayName,
   validateFileSize,
   validateStoreName,
 } from '../../../../utils/validators';
+import { findMatchingDocuments, getMatchCriteria, mergeMetadata } from './replaceUploadHelpers';
 
 interface MetadataValue {
   key: string;
@@ -29,100 +38,212 @@ interface ChunkingOptionsParam {
   maxOverlapTokens?: number;
 }
 
-interface DeletedDocumentInfo {
-  found: boolean;
-  searchedFilename: string;
-  documentName?: string;
-  displayName?: string;
-  message: string;
-}
-
-interface ReplaceUploadResult {
-  upload: Operation;
-  deletedDocument: DeletedDocumentInfo;
-}
-
 /**
- * Uploads a new document and deletes the old one with matching filename
+ * Uploads a new document and optionally deletes old document(s) based on matching criteria
  *
  * This operation is a workaround for the Google API limitation that doesn't allow
  * updating or replacing documents. It performs the following steps:
- * 1. Uploads the new document (same as regular upload)
- * 2. If upload succeeds, searches for documents with matching displayName (filename)
- * 3. If found, deletes the old document(s)
+ * 1. Validates inputs and binary data
+ * 2. If matchBy !== 'none': Lists documents, finds matches, optionally preserves metadata
+ * 3. DELETES old document(s) FIRST (before upload)
+ * 4. Uploads the new document with potentially merged metadata
+ * 5. Returns comprehensive result with deletion and metadata info
  *
  * @param this - n8n execution context
  * @param index - Item index in the workflow execution
- * @returns Promise resolving to upload result with deletion info
- * @throws {NodeOperationError} When store name invalid, file size exceeds 100MB, or metadata invalid
+ * @returns Promise resolving to upload result with deletion and metadata info
+ * @throws {NodeOperationError} When required fields missing, file size exceeds 100MB, or metadata invalid
  * @throws {NodeApiError} When upload fails or operation polling times out
  *
  * @example
  * ```typescript
- * // Replace upload with old document deletion
+ * // Replace upload by display name
  * const result = await replaceUpload.call(this, 0);
- * // Parameters from node:
- * // - storeName: 'fileSearchStores/my-store'
- * // - binaryPropertyName: 'data'
+ * // Parameters:
+ * // - matchBy: 'displayName'
  * // - displayName: 'Technical Documentation'
- * // - oldDocumentFilename: 'old-document.pdf'
- * // - forceDelete: true
- * // - waitForCompletion: true
+ * // - preserveMetadata: true
+ * // - metadataMergeStrategy: 'preferNew'
  *
  * console.log(result.upload.response.name); // New document resource name
- * console.log(result.deletedDocument.found); // true if old document was found and deleted
+ * console.log(result.deletedDocuments?.totalDeleted); // Number of documents deleted
+ * console.log(result.metadata?.finalMetadataCount); // Final metadata count after merge
  * ```
  */
 export async function replaceUpload(
   this: IExecuteFunctions,
   index: number,
 ): Promise<ReplaceUploadResult> {
+  // 1. Get all parameters
   const storeName = this.getNodeParameter('storeName', index) as string;
   const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index);
-  const displayName = this.getNodeParameter('displayName', index, '') as string;
-  const waitForCompletion = this.getNodeParameter('waitForCompletion', index) as boolean;
-  const oldDocumentFilename = this.getNodeParameter('oldDocumentFilename', index) as string;
+  const displayName = this.getNodeParameter('displayName', index) as string; // Now required
+  const matchBy = this.getNodeParameter('matchBy', index, 'none') as MatchByType;
+  const oldDocumentFilename = this.getNodeParameter('oldDocumentFilename', index, '') as string;
+  const matchMetadataKey = this.getNodeParameter('matchMetadataKey', index, '') as string;
+  const matchMetadataValue = this.getNodeParameter('matchMetadataValue', index, '') as string;
+  const deleteAllMatches = this.getNodeParameter('deleteAllMatches', index, false) as boolean;
+  const preserveMetadata = this.getNodeParameter('preserveMetadata', index, false) as boolean;
+  const metadataMergeStrategy = this.getNodeParameter(
+    'metadataMergeStrategy',
+    index,
+    'preferNew',
+  ) as MetadataMergeStrategy;
   const forceDelete = this.getNodeParameter('forceDelete', index, true) as boolean;
+  const waitForCompletion = this.getNodeParameter('waitForCompletion', index, true) as boolean;
 
+  // 2. Validate required fields
   validateStoreName.call(this, storeName);
-  if (displayName) {
-    validateDisplayName.call(this, displayName);
+  validateDisplayName.call(this, displayName);
+
+  // Validate conditional required fields
+  if (matchBy === 'customFilename' && !oldDocumentFilename) {
+    throw new NodeOperationError(
+      this.getNode(),
+      'Old Document Filename is required when matching by custom filename',
+    );
+  }
+  if (matchBy === 'metadata') {
+    if (!matchMetadataKey) {
+      throw new NodeOperationError(
+        this.getNode(),
+        'Metadata Key is required when matching by metadata',
+      );
+    }
+    if (!matchMetadataValue) {
+      throw new NodeOperationError(
+        this.getNode(),
+        'Metadata Value is required when matching by metadata',
+      );
+    }
   }
 
-  // Get binary data
+  // 3. Get binary data and validate
   const binaryData = this.helpers.assertBinaryData(index, binaryPropertyName);
   const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-
   validateFileSize.call(this, fileBuffer.length);
 
-  // Build metadata
-  const metadata: IDataObject = {};
-  if (displayName) {
-    metadata.displayName = displayName;
-  }
+  // 4. Initialize tracking variables
+  let matchingDocuments: Document[] = [];
+  const deletedDocuments: DeletedDocumentDetail[] = [];
+  let firstMatch: Document | undefined;
 
-  // Parse custom metadata
+  // 5. Build base metadata from custom metadata parameter
   const customMetadataParam = this.getNodeParameter(
     'customMetadata',
     index,
     {},
   ) as CustomMetadataParam;
+  let newCustomMetadata: CustomMetadata[] = [];
   if (customMetadataParam.metadataValues && customMetadataParam.metadataValues.length > 0) {
-    metadata.customMetadata = customMetadataParam.metadataValues.map((item: MetadataValue) => {
-      const metadataItem: CustomMetadata = { key: item.key };
-      if (item.valueType === 'string' && item.value !== undefined) {
-        metadataItem.stringValue = item.value;
-      } else if (item.valueType === 'number' && item.value !== undefined) {
-        metadataItem.numericValue = parseFloat(item.value);
-      } else if (item.valueType === 'stringList' && item.values !== undefined) {
-        metadataItem.stringListValue = {
-          values: item.values.split(',').map((v: string) => v.trim()),
-        };
-      }
-      return metadataItem;
-    });
+    newCustomMetadata = customMetadataParam.metadataValues
+      .map((item: MetadataValue) => {
+        const metadataItem: CustomMetadata = { key: item.key };
+        if (item.valueType === 'string' && item.value !== undefined && item.value !== '') {
+          metadataItem.stringValue = item.value;
+        } else if (item.valueType === 'number' && item.value !== undefined && item.value !== '') {
+          metadataItem.numericValue = parseFloat(item.value);
+        } else if (
+          item.valueType === 'stringList' &&
+          item.values !== undefined &&
+          item.values !== ''
+        ) {
+          metadataItem.stringListValue = {
+            values: item.values
+              .split(',')
+              .map((v: string) => v.trim())
+              .filter((v: string) => v !== ''),
+          };
+        }
+        return metadataItem;
+      })
+      // Filter out metadata items that don't have any value set (API requires one of stringValue, numericValue, or stringListValue)
+      .filter(
+        (item: CustomMetadata) =>
+          item.stringValue !== undefined ||
+          item.numericValue !== undefined ||
+          (item.stringListValue?.values && item.stringListValue.values.length > 0),
+      );
+  }
 
-    validateCustomMetadata.call(this, metadata.customMetadata as CustomMetadata[]);
+  // 6. Only search and delete if matchBy !== 'none'
+  if (matchBy !== 'none') {
+    // List all documents in the store
+    const documents = (await geminiApiRequestAllItems.call(
+      this,
+      'documents',
+      'GET',
+      `/${storeName}/documents`,
+    )) as Document[];
+
+    // Find matching documents
+    matchingDocuments = findMatchingDocuments(
+      documents,
+      matchBy,
+      displayName,
+      oldDocumentFilename,
+      matchMetadataKey,
+      matchMetadataValue,
+    );
+
+    firstMatch = matchingDocuments[0];
+
+    // Preserve and merge metadata from FIRST match if enabled
+    if (preserveMetadata && firstMatch?.customMetadata) {
+      newCustomMetadata = mergeMetadata(
+        firstMatch.customMetadata,
+        newCustomMetadata,
+        metadataMergeStrategy,
+      );
+    }
+
+    // Validate merged metadata count (max 20 items)
+    if (newCustomMetadata.length > 20) {
+      throw new NodeOperationError(
+        this.getNode(),
+        `Merged metadata exceeds maximum of 20 items (got ${newCustomMetadata.length}). ` +
+          'Reduce metadata or use a different merge strategy.',
+      );
+    }
+
+    // DELETE old document(s) FIRST (before upload!)
+    const documentsToDelete =
+      deleteAllMatches && matchBy === 'metadata'
+        ? matchingDocuments
+        : firstMatch
+          ? [firstMatch]
+          : [];
+
+    for (const doc of documentsToDelete) {
+      try {
+        const qs: IDataObject = forceDelete ? { force: true } : {};
+        await geminiApiRequest.call(this, 'DELETE', `/${doc.name}`, {}, qs);
+        deletedDocuments.push({
+          name: doc.name,
+          displayName: doc.displayName,
+          deleted: true,
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        deletedDocuments.push({
+          name: doc.name,
+          displayName: doc.displayName,
+          deleted: false,
+          error: errorMessage,
+        });
+        // Continue with other deletes, don't throw
+      }
+    }
+  }
+
+  // 7. Build final metadata for upload
+  const metadata: IDataObject = {
+    displayName,
+  };
+
+  if (newCustomMetadata.length > 0) {
+    metadata.customMetadata = newCustomMetadata;
+    validateCustomMetadata.call(this, newCustomMetadata);
   }
 
   // Parse chunking options
@@ -144,7 +265,7 @@ export async function replaceUpload(
     };
   }
 
-  // Step 1: Upload the new file
+  // 8. Upload new document
   let uploadResult = (await geminiResumableUpload.call(
     this,
     storeName,
@@ -158,47 +279,36 @@ export async function replaceUpload(
     uploadResult = (await pollOperation.call(this, uploadResult.name)) as Operation;
   }
 
-  // Step 2: Search for old document by filename (displayName)
-  let deletedDocumentInfo: DeletedDocumentInfo = {
-    found: false,
-    searchedFilename: oldDocumentFilename,
-    message: `No document found with filename "${oldDocumentFilename}" to delete`,
-  };
-
-  // Get all documents from the store to search by displayName
-  const documents = (await geminiApiRequestAllItems.call(
-    this,
-    'documents',
-    'GET',
-    `/${storeName}/documents`,
-  )) as Document[];
-
-  // Find document with matching displayName (case-insensitive)
-  const oldDocumentFilenameLower = oldDocumentFilename.toLowerCase();
-  const matchingDocument = documents.find(
-    (doc) => doc.displayName && doc.displayName.toLowerCase() === oldDocumentFilenameLower,
-  );
-
-  // Step 3: Delete the old document if found
-  if (matchingDocument) {
-    const qs: IDataObject = {};
-    if (forceDelete) {
-      qs.force = true;
-    }
-
-    await geminiApiRequest.call(this, 'DELETE', `/${matchingDocument.name}`, {}, qs);
-
-    deletedDocumentInfo = {
-      found: true,
-      searchedFilename: oldDocumentFilename,
-      documentName: matchingDocument.name,
-      displayName: matchingDocument.displayName,
-      message: `Successfully deleted old document: ${matchingDocument.displayName}`,
-    };
-  }
-
+  // 9. Return comprehensive result
   return {
     upload: uploadResult,
-    deletedDocument: deletedDocumentInfo,
+    deletedDocuments:
+      matchBy !== 'none'
+        ? {
+            matchBy,
+            matchCriteria: getMatchCriteria(
+              matchBy,
+              displayName,
+              oldDocumentFilename,
+              matchMetadataKey,
+              matchMetadataValue,
+            ),
+            totalFound: matchingDocuments.length,
+            totalDeleted: deletedDocuments.filter((d) => d.deleted).length,
+            deleteAllMatches,
+            documents: deletedDocuments,
+          }
+        : undefined,
+    metadata:
+      preserveMetadata && matchBy !== 'none'
+        ? {
+            preserved: !!firstMatch?.customMetadata,
+            sourceDocument: firstMatch?.name,
+            strategy: metadataMergeStrategy,
+            oldMetadataCount: firstMatch?.customMetadata?.length || 0,
+            newMetadataCount: customMetadataParam.metadataValues?.length || 0,
+            finalMetadataCount: newCustomMetadata.length,
+          }
+        : undefined,
   };
 }

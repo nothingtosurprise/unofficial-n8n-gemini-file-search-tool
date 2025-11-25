@@ -91,6 +91,7 @@ export const documentFields: INodeProperties[] = [
     },
     description: 'Name of the binary property containing the file to upload',
   },
+  // Display Name - Optional for upload/import
   {
     displayName: 'Display Name',
     name: 'displayName',
@@ -98,10 +99,170 @@ export const documentFields: INodeProperties[] = [
     default: '',
     displayOptions: {
       show: {
-        operation: ['upload', 'import', 'replaceUpload'],
+        operation: ['upload', 'import'],
       },
     },
     description: 'Human-readable display name for the document',
+  },
+  // Display Name - Required for replaceUpload
+  {
+    displayName: 'Display Name',
+    name: 'displayName',
+    type: 'string',
+    default: '',
+    required: true,
+    displayOptions: {
+      show: {
+        operation: ['replaceUpload'],
+      },
+    },
+    placeholder: 'my-document.pdf',
+    description:
+      'Display name for the new document. When "Delete Old Document By" is set to "Display Name", this is also used to find the old document.',
+  },
+  // Match By - How to find old documents
+  {
+    displayName: 'Delete Old Document By',
+    name: 'matchBy',
+    type: 'options',
+    default: 'none',
+    displayOptions: {
+      show: {
+        operation: ['replaceUpload'],
+      },
+    },
+    options: [
+      {
+        name: 'None (Upload Only)',
+        value: 'none',
+        description: 'Just upload the new document without deleting any existing documents',
+      },
+      {
+        name: 'Display Name',
+        value: 'displayName',
+        description: 'Find and delete documents matching the Display Name above',
+      },
+      {
+        name: 'Custom Filename',
+        value: 'customFilename',
+        description: 'Find and delete documents matching a different filename',
+      },
+      {
+        name: 'Metadata Key-Value',
+        value: 'metadata',
+        description: 'Find and delete documents by metadata (can match multiple)',
+      },
+    ],
+    description:
+      'Optional: Choose how to find old document(s) to delete before uploading. Select "None" to just upload.',
+  },
+  {
+    displayName: 'Old Document Filename',
+    name: 'oldDocumentFilename',
+    type: 'string',
+    default: '',
+    required: true,
+    displayOptions: {
+      show: {
+        operation: ['replaceUpload'],
+        matchBy: ['customFilename'],
+      },
+    },
+    placeholder: 'old-document.pdf',
+    description: 'The display name of the old document to delete (case-insensitive search)',
+  },
+  {
+    displayName: 'Metadata Key',
+    name: 'matchMetadataKey',
+    type: 'string',
+    default: '',
+    required: true,
+    displayOptions: {
+      show: {
+        operation: ['replaceUpload'],
+        matchBy: ['metadata'],
+      },
+    },
+    placeholder: 'documentId',
+    description: 'The metadata key to search for',
+  },
+  {
+    displayName: 'Metadata Value',
+    name: 'matchMetadataValue',
+    type: 'string',
+    default: '',
+    required: true,
+    displayOptions: {
+      show: {
+        operation: ['replaceUpload'],
+        matchBy: ['metadata'],
+      },
+    },
+    placeholder: 'doc-12345',
+    description: 'The metadata value to match (exact match, case-sensitive)',
+  },
+  {
+    displayName: 'Delete All Matches',
+    name: 'deleteAllMatches',
+    type: 'boolean',
+    default: false,
+    displayOptions: {
+      show: {
+        operation: ['replaceUpload'],
+        matchBy: ['metadata'],
+      },
+    },
+    description:
+      'When enabled, deletes ALL documents matching the metadata criteria. When disabled, only deletes the first match.',
+  },
+  {
+    displayName: 'Preserve Old Document Metadata',
+    name: 'preserveMetadata',
+    type: 'boolean',
+    default: false,
+    displayOptions: {
+      show: {
+        operation: ['replaceUpload'],
+      },
+    },
+    description:
+      'Copy metadata from the old document to the new document. If multiple documents are deleted, uses metadata from the first match.',
+  },
+  {
+    displayName: 'Metadata Merge Strategy',
+    name: 'metadataMergeStrategy',
+    type: 'options',
+    default: 'preferNew',
+    displayOptions: {
+      show: {
+        operation: ['replaceUpload'],
+        preserveMetadata: [true],
+      },
+    },
+    options: [
+      {
+        name: 'Prefer New (Override)',
+        value: 'preferNew',
+        description: 'New metadata values override old values for same keys',
+      },
+      {
+        name: 'Prefer Old (Keep Original)',
+        value: 'preferOld',
+        description: 'Old metadata values are kept, new values only fill gaps',
+      },
+      {
+        name: 'Merge All (Combine Keys)',
+        value: 'mergeAll',
+        description: 'All unique keys from both old and new metadata are included',
+      },
+      {
+        name: 'Use Old Only',
+        value: 'replaceEntirely',
+        description: 'Only use old metadata, ignore any new metadata provided',
+      },
+    ],
+    description:
+      'How to handle conflicts when both old document metadata and new custom metadata exist',
   },
   {
     displayName: 'Custom Metadata',
@@ -215,23 +376,6 @@ export const documentFields: INodeProperties[] = [
       },
     },
     description: 'Whether to wait for the upload/import operation to complete',
-  },
-
-  // Replace Upload operation fields
-  {
-    displayName: 'Old Document Filename',
-    name: 'oldDocumentFilename',
-    type: 'string',
-    default: '',
-    required: true,
-    displayOptions: {
-      show: {
-        operation: ['replaceUpload'],
-      },
-    },
-    placeholder: 'document.pdf',
-    description:
-      'The filename (displayName) of the old document to delete after successful upload. The search is case-insensitive.',
   },
   {
     displayName: 'Force Delete',

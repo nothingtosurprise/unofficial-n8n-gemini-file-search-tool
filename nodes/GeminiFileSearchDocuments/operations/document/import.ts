@@ -73,21 +73,39 @@ export async function importFile(this: IExecuteFunctions, index: number): Promis
     {},
   ) as CustomMetadataParam;
   if (customMetadataParam.metadataValues && customMetadataParam.metadataValues.length > 0) {
-    body.customMetadata = customMetadataParam.metadataValues.map((item: MetadataValue) => {
-      const metadataItem: CustomMetadata = { key: item.key };
-      if (item.valueType === 'string' && item.value !== undefined) {
-        metadataItem.stringValue = item.value;
-      } else if (item.valueType === 'number' && item.value !== undefined) {
-        metadataItem.numericValue = parseFloat(item.value);
-      } else if (item.valueType === 'stringList' && item.values !== undefined) {
-        metadataItem.stringListValue = {
-          values: item.values.split(',').map((v: string) => v.trim()),
-        };
-      }
-      return metadataItem;
-    });
+    const customMetadata = customMetadataParam.metadataValues
+      .map((item: MetadataValue) => {
+        const metadataItem: CustomMetadata = { key: item.key };
+        if (item.valueType === 'string' && item.value !== undefined && item.value !== '') {
+          metadataItem.stringValue = item.value;
+        } else if (item.valueType === 'number' && item.value !== undefined && item.value !== '') {
+          metadataItem.numericValue = parseFloat(item.value);
+        } else if (
+          item.valueType === 'stringList' &&
+          item.values !== undefined &&
+          item.values !== ''
+        ) {
+          metadataItem.stringListValue = {
+            values: item.values
+              .split(',')
+              .map((v: string) => v.trim())
+              .filter((v: string) => v !== ''),
+          };
+        }
+        return metadataItem;
+      })
+      // Filter out metadata items that don't have any value set (API requires one of stringValue, numericValue, or stringListValue)
+      .filter(
+        (item: CustomMetadata) =>
+          item.stringValue !== undefined ||
+          item.numericValue !== undefined ||
+          (item.stringListValue?.values && item.stringListValue.values.length > 0),
+      );
 
-    validateCustomMetadata.call(this, body.customMetadata as CustomMetadata[]);
+    if (customMetadata.length > 0) {
+      body.customMetadata = customMetadata;
+      validateCustomMetadata.call(this, customMetadata);
+    }
   }
 
   // Parse chunking options

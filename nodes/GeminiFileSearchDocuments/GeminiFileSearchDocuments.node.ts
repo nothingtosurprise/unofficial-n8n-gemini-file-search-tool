@@ -13,7 +13,8 @@ export class GeminiFileSearchDocuments implements INodeType {
     name: 'geminiFileSearchDocuments',
     icon: 'file:gemini.svg',
     group: ['transform'],
-    version: 1,
+    version: [1],
+    defaultVersion: 1,
     subtitle: '={{$parameter["operation"]}}',
     description: 'Manage and query documents in Gemini File Search stores',
     defaults: {

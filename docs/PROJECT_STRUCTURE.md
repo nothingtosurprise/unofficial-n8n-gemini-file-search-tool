@@ -2,7 +2,7 @@
 
 **Project:** n8n Gemini File Search Tool
 **Version:** 1.0.0
-**Last Updated:** 2025-11-24
+**Last Updated:** 2025-11-25
 
 ---
 
@@ -57,6 +57,8 @@ n8n-gemini-file-search-tool/
 │               ├── get.ts            # Get document operation
 │               ├── delete.ts         # Delete document operation
 │               ├── query.ts          # Query documents operation
+│               ├── replaceUpload.ts  # Replace upload operation
+│               ├── replaceUploadHelpers.ts  # Helper functions for replace upload
 │               └── index.ts          # Barrel export
 │
 ├── utils/                            # Shared utility modules
@@ -90,7 +92,9 @@ n8n-gemini-file-search-tool/
 │   │           ├── import.test.ts
 │   │           ├── list.test.ts
 │   │           ├── get-delete.test.ts
-│   │           └── query.test.ts
+│   │           ├── query.test.ts
+│   │           ├── replaceUpload.test.ts
+│   │           └── replaceUploadHelpers.test.ts
 │   │
 │   ├── integration/                  # Integration tests (Phase 3)
 │   │   └── .gitkeep
@@ -406,7 +410,7 @@ phase_XX/
 
 ---
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2025-11-25
 **Maintained By:** Project Team
 
 🤖 Generated with Claude Code
