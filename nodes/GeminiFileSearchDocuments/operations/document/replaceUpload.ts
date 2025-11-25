@@ -241,9 +241,18 @@ export async function replaceUpload(
     displayName,
   };
 
-  if (newCustomMetadata.length > 0) {
-    metadata.customMetadata = newCustomMetadata;
-    validateCustomMetadata.call(this, newCustomMetadata);
+  // Final filter to ensure all metadata items have valid values
+  // (merged metadata from old documents might have invalid entries)
+  const validCustomMetadata = newCustomMetadata.filter(
+    (item: CustomMetadata) =>
+      item.stringValue !== undefined ||
+      item.numericValue !== undefined ||
+      (item.stringListValue?.values && item.stringListValue.values.length > 0),
+  );
+
+  if (validCustomMetadata.length > 0) {
+    metadata.customMetadata = validCustomMetadata;
+    validateCustomMetadata.call(this, validCustomMetadata);
   }
 
   // Parse chunking options
@@ -307,7 +316,7 @@ export async function replaceUpload(
             strategy: metadataMergeStrategy,
             oldMetadataCount: firstMatch?.customMetadata?.length || 0,
             newMetadataCount: customMetadataParam.metadataValues?.length || 0,
-            finalMetadataCount: newCustomMetadata.length,
+            finalMetadataCount: validCustomMetadata.length,
           }
         : undefined,
   };
