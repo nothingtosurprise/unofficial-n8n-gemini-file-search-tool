@@ -19,9 +19,9 @@
     "vector-search"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/mbradaschia/n8n-nodes-gemini-file-search",
+  "homepage": "https://github.com/mbradaschia/n8n-nodes-gemini-file-search-tool",
   "bugs": {
-    "url": "https://github.com/mbradaschia/n8n-nodes-gemini-file-search/issues"
+    "url": "https://github.com/mbradaschia/n8n-nodes-gemini-file-search-tool/issues"
   },
   "author": {
     "name": "Marcelo Bradaschia",
@@ -29,7 +29,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mbradaschia/n8n-nodes-gemini-file-search.git"
+    "url": "git+https://github.com/mbradaschia/n8n-nodes-gemini-file-search-tool.git"
   },
   "main": "dist/index.js",
   "scripts": {
