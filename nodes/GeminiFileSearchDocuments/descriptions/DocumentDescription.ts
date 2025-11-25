@@ -45,7 +45,8 @@ export const documentOperations: INodeProperties[] = [
       {
         name: 'Query',
         value: 'query',
-        description: 'Query documents using Gemini model',
+        description:
+          'Query documents using Gemini RAG. Returns: candidates[].content.parts[].text (answer), candidates[].groundingMetadata.groundingChunks[] (sources with uri/title), candidates[].groundingMetadata.groundingSupports[] (citation mappings with segment text and confidenceScores), usageMetadata (token counts)',
         action: 'Query documents',
       },
       {
@@ -538,7 +539,8 @@ export const documentFields: INodeProperties[] = [
       rows: 4,
     },
     default: '',
-    description: 'The query to search for in the documents',
+    description:
+      'The question to ask. Response includes: candidates[0].content.parts[0].text for the answer, groundingMetadata.groundingChunks for source documents (uri, title), groundingMetadata.groundingSupports for citations linking text segments to sources with confidence scores.',
     placeholder: 'What are the key findings about transformer models?',
   },
   {
