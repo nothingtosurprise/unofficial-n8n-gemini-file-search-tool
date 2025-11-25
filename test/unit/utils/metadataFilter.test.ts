@@ -157,6 +157,82 @@ describe('metadataFilter', () => {
       });
     });
 
+    describe('parentheses grouping', () => {
+      it('should handle simple parentheses with OR', () => {
+        const doc = createDocument([
+          { key: 'author', stringValue: 'Latour' },
+          { key: 'year', numericValue: 2006 },
+        ]);
+        expect(matchesFilter(doc, '(author="Latour" OR author="Callon") AND year>2000')).toBe(true);
+      });
+
+      it('should handle simple parentheses with AND', () => {
+        const doc = createDocument([
+          { key: 'author', stringValue: 'Latour' },
+          { key: 'year', numericValue: 2006 },
+          { key: 'type', stringValue: 'book' },
+        ]);
+        expect(matchesFilter(doc, 'author="Latour" AND (year>2000 AND type="book")')).toBe(true);
+      });
+
+      it('should respect parentheses precedence over AND', () => {
+        const doc = createDocument([
+          { key: 'author', stringValue: 'Callon' },
+          { key: 'year', numericValue: 2006 },
+        ]);
+        // Without parentheses: author="Latour" OR author="Callon" AND year>2000
+        // Would be: author="Latour" OR (author="Callon" AND year>2000) -> true
+        // With parentheses: (author="Latour" OR author="Callon") AND year>2000 -> true
+        expect(matchesFilter(doc, '(author="Latour" OR author="Callon") AND year>2000')).toBe(true);
+      });
+
+      it('should handle nested parentheses', () => {
+        const doc = createDocument([
+          { key: 'author', stringValue: 'Latour' },
+          { key: 'year', numericValue: 2023 },
+          { key: 'rating', numericValue: 4.5 },
+        ]);
+        expect(
+          matchesFilter(doc, '((author="Latour" OR author="Callon") AND year>=2023) OR rating>4.8'),
+        ).toBe(true);
+      });
+
+      it('should handle multiple parentheses groups', () => {
+        const doc = createDocument([
+          { key: 'category', stringValue: 'AI' },
+          { key: 'rating', numericValue: 4.5 },
+        ]);
+        expect(
+          matchesFilter(doc, '(category="AI" OR category="ML") AND (rating>=4.0 OR rating<3.0)'),
+        ).toBe(true);
+      });
+
+      it('should evaluate false when parentheses group fails', () => {
+        const doc = createDocument([
+          { key: 'author', stringValue: 'Smith' },
+          { key: 'year', numericValue: 2006 },
+        ]);
+        expect(matchesFilter(doc, '(author="Latour" OR author="Callon") AND year>2000')).toBe(
+          false,
+        );
+      });
+
+      it('should handle complex nested expression', () => {
+        const doc = createDocument([
+          { key: 'author', stringValue: 'Latour' },
+          { key: 'year', numericValue: 2024 },
+          { key: 'type', stringValue: 'article' },
+          { key: 'rating', numericValue: 4.8 },
+        ]);
+        expect(
+          matchesFilter(
+            doc,
+            '((author="Latour" AND year>2020) OR (type="book" AND rating>4.5)) AND year<2025',
+          ),
+        ).toBe(true);
+      });
+    });
+
     describe('edge cases', () => {
       it('should handle document with no metadata', () => {
         const doc = createDocument([]);
@@ -179,6 +255,13 @@ describe('metadataFilter', () => {
       it('should return false for invalid filter format', () => {
         const doc = createDocument([{ key: 'author', stringValue: 'Latour' }]);
         expect(matchesFilter(doc, 'invalid-format')).toBe(false);
+      });
+
+      it('should handle malformed parentheses gracefully', () => {
+        const doc = createDocument([{ key: 'author', stringValue: 'Latour' }]);
+        // Unbalanced parentheses should return false
+        expect(matchesFilter(doc, '(author="Latour"')).toBe(false);
+        expect(matchesFilter(doc, 'author="Latour")')).toBe(false);
       });
     });
   });
@@ -269,6 +352,23 @@ describe('metadataFilter', () => {
     it('should handle empty document array', () => {
       const filtered = filterDocuments([], 'author="Latour"');
       expect(filtered).toHaveLength(0);
+    });
+
+    it('should filter with parentheses grouping', () => {
+      const docs = createDocuments();
+      const filtered = filterDocuments(docs, '(author="Latour" OR author="Callon") AND year>2000');
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0].name).toBe('doc1');
+    });
+
+    it('should filter with complex nested parentheses', () => {
+      const docs = createDocuments();
+      const filtered = filterDocuments(
+        docs,
+        '((author="Latour" AND year>=2006) OR author="Callon") AND year<2010',
+      );
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map((d) => d.name).sort()).toEqual(['doc1', 'doc2']);
     });
   });
 });

@@ -3,14 +3,15 @@ import { CustomMetadata, Document } from './types';
 /**
  * Evaluates if a document matches a metadata filter expression
  *
- * Supports simple AIP-160 style filters:
+ * Supports AIP-160 style filters with parentheses:
  * - String equality: key="value"
  * - Numeric comparison: key>10, key>=10, key<10, key<=10, key=10
  * - AND operator: condition1 AND condition2
  * - OR operator: condition1 OR condition2
+ * - Parentheses grouping: (condition1 OR condition2) AND condition3
  *
  * @param document - Document to evaluate
- * @param filterExpression - Filter expression (e.g., 'author="Latour" AND year>2000')
+ * @param filterExpression - Filter expression (e.g., '(author="Latour" OR author="Callon") AND year>2000')
  * @returns True if document matches the filter
  *
  * @example
@@ -21,7 +22,7 @@ import { CustomMetadata, Document } from './types';
  *     { key: 'year', numericValue: 2006 }
  *   ]
  * };
- * matchesFilter(doc, 'author="Latour" AND year>2000'); // true
+ * matchesFilter(doc, '(author="Latour" OR author="Callon") AND year>2000'); // true
  * ```
  */
 export function matchesFilter(document: Document, filterExpression: string): boolean {
@@ -30,20 +31,142 @@ export function matchesFilter(document: Document, filterExpression: string): boo
   }
 
   const metadata = document.customMetadata || [];
+  const expression = filterExpression.trim();
 
-  // Parse AND/OR operators (simple implementation)
-  if (filterExpression.includes(' OR ')) {
-    const conditions = filterExpression.split(' OR ');
-    return conditions.some((condition) => matchesFilter(document, condition.trim()));
+  // Parse the expression with parentheses support
+  return evaluateExpression(metadata, expression);
+}
+
+/**
+ * Evaluates a filter expression with support for parentheses, AND, and OR operators
+ */
+function evaluateExpression(metadata: CustomMetadata[], expression: string): boolean {
+  const expr = expression.trim();
+
+  // Handle placeholders from parentheses evaluation
+  if (expr === '__TRUE__') return true;
+  if (expr === '__FALSE__') return false;
+
+  // Handle parentheses first - find and evaluate innermost parentheses
+  if (expr.includes('(')) {
+    return evaluateWithParentheses(metadata, expr);
   }
 
-  if (filterExpression.includes(' AND ')) {
-    const conditions = filterExpression.split(' AND ');
-    return conditions.every((condition) => matchesFilter(document, condition.trim()));
+  // No parentheses - evaluate OR operators (lower precedence)
+  if (expr.includes(' OR ')) {
+    const conditions = splitByOperator(expr, ' OR ');
+    return conditions.some((condition) => evaluateExpression(metadata, condition.trim()));
   }
 
-  // Parse single condition
-  return evaluateCondition(metadata, filterExpression.trim());
+  // Evaluate AND operators (higher precedence)
+  if (expr.includes(' AND ')) {
+    const conditions = splitByOperator(expr, ' AND ');
+    return conditions.every((condition) => evaluateExpression(metadata, condition.trim()));
+  }
+
+  // Single condition
+  return evaluateCondition(metadata, expr);
+}
+
+/**
+ * Handles expressions with parentheses by recursively evaluating grouped expressions
+ */
+function evaluateWithParentheses(metadata: CustomMetadata[], expression: string): boolean {
+  let processed = expression;
+
+  // Keep processing until no parentheses remain
+  while (processed.includes('(')) {
+    // Find innermost parentheses (one without nested parentheses)
+    let start = -1;
+    let end = -1;
+
+    for (let i = 0; i < processed.length; i++) {
+      if (processed[i] === '(') {
+        start = i; // Keep updating start to get the last opening paren before a closing
+      } else if (processed[i] === ')' && start !== -1) {
+        end = i;
+        break; // Found a pair with no nested parens between them
+      }
+    }
+
+    if (start === -1 || end === -1) {
+      // Malformed expression - unbalanced parentheses
+      return false;
+    }
+
+    // Extract and evaluate the expression inside parentheses
+    const innerExpression = processed.substring(start + 1, end);
+    const result = evaluateExpression(metadata, innerExpression);
+
+    // Replace the parenthesized expression with a placeholder based on result
+    const placeholder = result ? '__TRUE__' : '__FALSE__';
+    processed = processed.substring(0, start) + placeholder + processed.substring(end + 1);
+  }
+
+  // Now evaluate the expression with mixed placeholders and conditions
+  return evaluateMixedExpression(metadata, processed.trim());
+}
+
+/**
+ * Evaluates an expression containing mixed __TRUE__/__FALSE__ placeholders and conditions
+ */
+function evaluateMixedExpression(metadata: CustomMetadata[], expression: string): boolean {
+  const expr = expression.trim();
+
+  // Handle single placeholder
+  if (expr === '__TRUE__') return true;
+  if (expr === '__FALSE__') return false;
+
+  // Handle OR operators (lower precedence)
+  const orParts = expr.split(' OR ');
+  if (orParts.length > 1) {
+    return orParts.some((part) => evaluateMixedExpression(metadata, part.trim()));
+  }
+
+  // Handle AND operators (higher precedence)
+  const andParts = expr.split(' AND ');
+  if (andParts.length > 1) {
+    return andParts.every((part) => evaluateMixedExpression(metadata, part.trim()));
+  }
+
+  // Must be a single condition
+  return evaluateCondition(metadata, expr);
+}
+
+/**
+ * Splits an expression by an operator, respecting quoted strings
+ * This ensures we don't split on operators inside quoted strings
+ */
+function splitByOperator(expression: string, operator: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < expression.length) {
+    const char = expression[i];
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      current += char;
+      i++;
+    } else if (!inQuotes && expression.substring(i, i + operator.length) === operator) {
+      // Found operator outside quotes
+      result.push(current);
+      current = '';
+      i += operator.length;
+    } else {
+      current += char;
+      i++;
+    }
+  }
+
+  // Add the last part
+  if (current) {
+    result.push(current);
+  }
+
+  return result;
 }
 
 /**
