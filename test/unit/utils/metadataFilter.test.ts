@@ -157,6 +157,129 @@ describe('metadataFilter', () => {
       });
     });
 
+    describe('string contains (~)', () => {
+      it('should match when string contains value', () => {
+        const doc = createDocument([
+          { key: 'filename', stringValue: 'Latour - 2006 - Reassembling the Social.pdf' },
+        ]);
+        expect(matchesFilter(doc, 'filename~"Latour"')).toBe(true);
+        expect(matchesFilter(doc, 'filename~"2006"')).toBe(true);
+        expect(matchesFilter(doc, 'filename~"Social"')).toBe(true);
+      });
+
+      it('should be case-insensitive', () => {
+        const doc = createDocument([
+          { key: 'filename', stringValue: 'Latour - 2006 - Reassembling the Social.pdf' },
+        ]);
+        expect(matchesFilter(doc, 'filename~"latour"')).toBe(true);
+        expect(matchesFilter(doc, 'filename~"LATOUR"')).toBe(true);
+        expect(matchesFilter(doc, 'filename~"LaTouR"')).toBe(true);
+      });
+
+      it('should not match when value not contained', () => {
+        const doc = createDocument([
+          { key: 'filename', stringValue: 'Latour - 2006 - Reassembling the Social.pdf' },
+        ]);
+        expect(matchesFilter(doc, 'filename~"Callon"')).toBe(false);
+        expect(matchesFilter(doc, 'filename~"2010"')).toBe(false);
+      });
+
+      it('should match in stringListValue', () => {
+        const doc = createDocument([
+          {
+            key: 'tags',
+            stringListValue: { values: ['Actor-Network Theory', 'Sociology', 'STS'] },
+          },
+        ]);
+        expect(matchesFilter(doc, 'tags~"network"')).toBe(true);
+        expect(matchesFilter(doc, 'tags~"STS"')).toBe(true);
+      });
+
+      it('should work with AND/OR operators', () => {
+        const doc = createDocument([
+          { key: 'filename', stringValue: 'Latour - 2006 - Paper.pdf' },
+          { key: 'year', numericValue: 2006 },
+        ]);
+        expect(matchesFilter(doc, 'filename~"Latour" AND year>2000')).toBe(true);
+        expect(matchesFilter(doc, 'filename~"Callon" OR year>2000')).toBe(true);
+      });
+    });
+
+    describe('string starts with (^=)', () => {
+      it('should match when string starts with value', () => {
+        const doc = createDocument([{ key: 'filename', stringValue: 'Latour - 2006 - Paper.pdf' }]);
+        expect(matchesFilter(doc, 'filename^="Latour"')).toBe(true);
+        expect(matchesFilter(doc, 'filename^="Latour - 2006"')).toBe(true);
+      });
+
+      it('should be case-insensitive', () => {
+        const doc = createDocument([{ key: 'filename', stringValue: 'Latour - 2006 - Paper.pdf' }]);
+        expect(matchesFilter(doc, 'filename^="latour"')).toBe(true);
+        expect(matchesFilter(doc, 'filename^="LATOUR"')).toBe(true);
+      });
+
+      it('should not match when value is not at start', () => {
+        const doc = createDocument([{ key: 'filename', stringValue: 'Latour - 2006 - Paper.pdf' }]);
+        expect(matchesFilter(doc, 'filename^="2006"')).toBe(false);
+        expect(matchesFilter(doc, 'filename^="Paper"')).toBe(false);
+      });
+
+      it('should match in stringListValue', () => {
+        const doc = createDocument([
+          { key: 'authors', stringListValue: { values: ['Bruno Latour', 'Michel Callon'] } },
+        ]);
+        expect(matchesFilter(doc, 'authors^="Bruno"')).toBe(true);
+        expect(matchesFilter(doc, 'authors^="Michel"')).toBe(true);
+      });
+    });
+
+    describe('string ends with ($=)', () => {
+      it('should match when string ends with value', () => {
+        const doc = createDocument([{ key: 'filename', stringValue: 'Latour - 2006 - Paper.pdf' }]);
+        expect(matchesFilter(doc, 'filename$=".pdf"')).toBe(true);
+        expect(matchesFilter(doc, 'filename$="Paper.pdf"')).toBe(true);
+      });
+
+      it('should be case-insensitive', () => {
+        const doc = createDocument([{ key: 'filename', stringValue: 'Latour - 2006 - Paper.PDF' }]);
+        expect(matchesFilter(doc, 'filename$=".pdf"')).toBe(true);
+        expect(matchesFilter(doc, 'filename$=".PDF"')).toBe(true);
+      });
+
+      it('should not match when value is not at end', () => {
+        const doc = createDocument([{ key: 'filename', stringValue: 'Latour - 2006 - Paper.pdf' }]);
+        expect(matchesFilter(doc, 'filename$="Latour"')).toBe(false);
+        expect(matchesFilter(doc, 'filename$="2006"')).toBe(false);
+      });
+
+      it('should match in stringListValue', () => {
+        const doc = createDocument([
+          { key: 'files', stringListValue: { values: ['document.pdf', 'image.png'] } },
+        ]);
+        expect(matchesFilter(doc, 'files$=".pdf"')).toBe(true);
+        expect(matchesFilter(doc, 'files$=".png"')).toBe(true);
+      });
+    });
+
+    describe('combined string operators', () => {
+      it('should work with parentheses', () => {
+        const doc = createDocument([
+          { key: 'filename', stringValue: 'Latour - 2006 - Actor-Network Theory.pdf' },
+          { key: 'year', numericValue: 2006 },
+        ]);
+        expect(
+          matchesFilter(doc, '(filename~"Latour" OR filename~"Callon") AND filename$=".pdf"'),
+        ).toBe(true);
+      });
+
+      it('should combine multiple string operators', () => {
+        const doc = createDocument([{ key: 'filename', stringValue: 'Latour - 2006 - Paper.pdf' }]);
+        expect(
+          matchesFilter(doc, 'filename^="Latour" AND filename~"2006" AND filename$=".pdf"'),
+        ).toBe(true);
+      });
+    });
+
     describe('parentheses grouping', () => {
       it('should handle simple parentheses with OR', () => {
         const doc = createDocument([

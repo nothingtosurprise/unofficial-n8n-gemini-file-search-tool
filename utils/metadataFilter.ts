@@ -5,24 +5,29 @@ import { CustomMetadata, Document } from './types';
  *
  * Supports AIP-160 style filters with parentheses:
  * - String equality: key="value"
+ * - String contains: key~"value" (case-insensitive)
+ * - String starts with: key^="value" (case-insensitive)
+ * - String ends with: key$="value" (case-insensitive)
  * - Numeric comparison: key>10, key>=10, key<10, key<=10, key=10
  * - AND operator: condition1 AND condition2
  * - OR operator: condition1 OR condition2
  * - Parentheses grouping: (condition1 OR condition2) AND condition3
  *
  * @param document - Document to evaluate
- * @param filterExpression - Filter expression (e.g., '(author="Latour" OR author="Callon") AND year>2000')
+ * @param filterExpression - Filter expression (e.g., 'filename~"Latour" AND year>2000')
  * @returns True if document matches the filter
  *
  * @example
  * ```typescript
  * const doc = {
  *   customMetadata: [
- *     { key: 'author', stringValue: 'Latour' },
+ *     { key: 'filename', stringValue: 'Latour - 2006 - Paper.pdf' },
  *     { key: 'year', numericValue: 2006 }
  *   ]
  * };
- * matchesFilter(doc, '(author="Latour" OR author="Callon") AND year>2000'); // true
+ * matchesFilter(doc, 'filename~"Latour" AND year>2000'); // true
+ * matchesFilter(doc, 'filename^="Latour"'); // true (starts with)
+ * matchesFilter(doc, 'filename$=".pdf"'); // true (ends with)
  * ```
  */
 export function matchesFilter(document: Document, filterExpression: string): boolean {
@@ -173,16 +178,68 @@ function splitByOperator(expression: string, operator: string): string[] {
  * Evaluates a single filter condition against metadata
  */
 function evaluateCondition(metadata: CustomMetadata[], condition: string): boolean {
-  // Match patterns: key="value", key>10, key>=10, key<10, key<=10, key=10
-  const stringMatch = condition.match(/^(\w+)="([^"]*)"$/);
-  if (stringMatch) {
-    const [, key, value] = stringMatch;
+  // Match string equality: key="value"
+  const stringEqualityMatch = condition.match(/^(\w+)="([^"]*)"$/);
+  if (stringEqualityMatch) {
+    const [, key, value] = stringEqualityMatch;
     return metadata.some(
       (m) =>
         m.key === key && (m.stringValue === value || m.stringListValue?.values.includes(value)),
     );
   }
 
+  // Match string contains: key~"value" (case-insensitive)
+  const containsMatch = condition.match(/^(\w+)~"([^"]*)"$/);
+  if (containsMatch) {
+    const [, key, value] = containsMatch;
+    const valueLower = value.toLowerCase();
+    return metadata.some((m) => {
+      if (m.key !== key) return false;
+      if (m.stringValue) {
+        return m.stringValue.toLowerCase().includes(valueLower);
+      }
+      if (m.stringListValue?.values) {
+        return m.stringListValue.values.some((v) => v.toLowerCase().includes(valueLower));
+      }
+      return false;
+    });
+  }
+
+  // Match string starts with: key^="value" (case-insensitive)
+  const startsWithMatch = condition.match(/^(\w+)\^="([^"]*)"$/);
+  if (startsWithMatch) {
+    const [, key, value] = startsWithMatch;
+    const valueLower = value.toLowerCase();
+    return metadata.some((m) => {
+      if (m.key !== key) return false;
+      if (m.stringValue) {
+        return m.stringValue.toLowerCase().startsWith(valueLower);
+      }
+      if (m.stringListValue?.values) {
+        return m.stringListValue.values.some((v) => v.toLowerCase().startsWith(valueLower));
+      }
+      return false;
+    });
+  }
+
+  // Match string ends with: key$="value" (case-insensitive)
+  const endsWithMatch = condition.match(/^(\w+)\$="([^"]*)"$/);
+  if (endsWithMatch) {
+    const [, key, value] = endsWithMatch;
+    const valueLower = value.toLowerCase();
+    return metadata.some((m) => {
+      if (m.key !== key) return false;
+      if (m.stringValue) {
+        return m.stringValue.toLowerCase().endsWith(valueLower);
+      }
+      if (m.stringListValue?.values) {
+        return m.stringListValue.values.some((v) => v.toLowerCase().endsWith(valueLower));
+      }
+      return false;
+    });
+  }
+
+  // Match numeric comparison: key>10, key>=10, key<10, key<=10, key=10
   const numericMatch = condition.match(/^(\w+)(>=|<=|>|<|=)(\d+(?:\.\d+)?)$/);
   if (numericMatch) {
     const [, key, operator, valueStr] = numericMatch;
