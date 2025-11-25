@@ -46,7 +46,7 @@ export const documentOperations: INodeProperties[] = [
         name: 'Query',
         value: 'query',
         description:
-          'Query documents using Gemini RAG. Returns: candidates[].content.parts[].text (answer), candidates[].groundingMetadata.groundingChunks[] (sources with uri/title), candidates[].groundingMetadata.groundingSupports[] (citation mappings with segment text and confidenceScores), usageMetadata (token counts)',
+          'Query documents using Gemini RAG (Retrieval-Augmented Generation). Searches your File Search stores and returns an AI-generated answer with source citations. Response structure: { candidates: [{ content: { parts: [{ text: "The answer..." }] }, groundingMetadata: { groundingChunks: [{ retrievedContext: { uri: "fileSearchStores/.../documents/...", title: "Document Name" } }], groundingSupports: [{ segment: { text: "cited text" }, groundingChunkIndices: [0], confidenceScores: [0.95] }] } }], usageMetadata: { totalTokenCount: 150 } }. Use groundingChunks to get source document references and groundingSupports to map which parts of the answer came from which sources.',
         action: 'Query documents',
       },
       {
@@ -540,7 +540,7 @@ export const documentFields: INodeProperties[] = [
     },
     default: '',
     description:
-      'The question to ask. Response includes: candidates[0].content.parts[0].text for the answer, groundingMetadata.groundingChunks for source documents (uri, title), groundingMetadata.groundingSupports for citations linking text segments to sources with confidence scores.',
+      'The question to ask about your documents. To extract data from the response: Answer text is at $json.candidates[0].content.parts[0].text. Source documents are in $json.candidates[0].groundingMetadata.groundingChunks[].retrievedContext (contains uri and title). Citations mapping answer segments to sources are in $json.candidates[0].groundingMetadata.groundingSupports[] (contains segment.text, groundingChunkIndices, and confidenceScores). Token usage is at $json.usageMetadata.totalTokenCount.',
     placeholder: 'What are the key findings about transformer models?',
   },
   {
