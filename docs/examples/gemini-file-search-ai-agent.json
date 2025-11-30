@@ -1,0 +1,136 @@
+{
+  "name": "Gemini File Search AI Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-node",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [180, 300]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "You are a helpful assistant that answers questions based on the provided documents. Always cite your sources when answering."
+        }
+      },
+      "id": "ai-agent-node",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [620, 300]
+    },
+    {
+      "parameters": {
+        "mode": "defineChatModel",
+        "jsCode": "/**\n * GeminiFileSearchChatModel\n *\n * A custom LangChain chat model that integrates Gemini's File Search\n * capability directly into the model, enabling single API call RAG queries.\n *\n * CONFIGURATION: Update the CONFIG object below with your settings.\n */\n\nconst { BaseChatModel } = require('@langchain/core/language_models/chat_models');\nconst { AIMessage } = require('@langchain/core/messages');\n\n// ============================================\n// CONFIGURATION - UPDATE THESE VALUES\n// ============================================\nconst CONFIG = {\n  // Your Gemini API key (or use credential reference)\n  apiKey: 'YOUR_GEMINI_API_KEY',\n  \n  // Model to use\n  model: 'gemini-2.5-flash',\n  \n  // File Search Store names - REQUIRED\n  // Format: 'fileSearchStores/your-store-name'\n  storeNames: [\n    'fileSearchStores/your-store-name'\n  ],\n  \n  // Optional: Metadata filter (AIP-160 format)\n  // Example: 'category=\"docs\" AND version>1.0'\n  metadataFilter: '',\n  \n  // Generation parameters\n  temperature: 0.7,\n  maxOutputTokens: 2048,\n};\n// ============================================\n\nclass GeminiFileSearchChatModel extends BaseChatModel {\n  constructor(config = {}) {\n    super({});\n    this.apiKey = config.apiKey || CONFIG.apiKey;\n    this.modelName = config.model || CONFIG.model;\n    this.storeNames = config.storeNames || CONFIG.storeNames;\n    this.metadataFilter = config.metadataFilter || CONFIG.metadataFilter;\n    this.temperature = config.temperature ?? CONFIG.temperature;\n    this.maxOutputTokens = config.maxOutputTokens ?? CONFIG.maxOutputTokens;\n  }\n\n  _llmType() {\n    return 'gemini-file-search';\n  }\n\n  _convertMessages(messages) {\n    const contents = [];\n    for (const msg of messages) {\n      const msgType = msg._getType();\n      const content = typeof msg.content === 'string'\n        ? msg.content\n        : JSON.stringify(msg.content);\n\n      if (msgType === 'system') {\n        contents.push({\n          role: 'user',\n          parts: [{ text: content }],\n        });\n        contents.push({\n          role: 'model',\n          parts: [{ text: 'Understood. I will follow these instructions.' }],\n        });\n      } else if (msgType === 'human') {\n        contents.push({\n          role: 'user',\n          parts: [{ text: content }],\n        });\n      } else if (msgType === 'ai') {\n        contents.push({\n          role: 'model',\n          parts: [{ text: content }],\n        });\n      }\n    }\n    return contents;\n  }\n\n  async _callGeminiApi(contents) {\n    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`;\n\n    const body = {\n      contents,\n      tools: [{\n        fileSearch: {\n          fileSearchStoreNames: this.storeNames,\n          ...(this.metadataFilter && { metadataFilter: this.metadataFilter }),\n        },\n      }],\n      generationConfig: {\n        temperature: this.temperature,\n        maxOutputTokens: this.maxOutputTokens,\n      },\n    };\n\n    const response = await fetch(url, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify(body),\n    });\n\n    if (!response.ok) {\n      const error = await response.text();\n      throw new Error(`Gemini API error: ${response.status} - ${error}`);\n    }\n\n    return response.json();\n  }\n\n  async _generate(messages, options, runManager) {\n    const contents = this._convertMessages(messages);\n    const response = await this._callGeminiApi(contents);\n\n    const candidate = response.candidates?.[0];\n    const text = candidate?.content?.parts?.[0]?.text ?? '';\n    const groundingMetadata = candidate?.groundingMetadata;\n\n    const aiMessage = new AIMessage({\n      content: text,\n      additional_kwargs: {\n        groundingMetadata,\n        groundingChunks: groundingMetadata?.groundingChunks,\n        groundingSupports: groundingMetadata?.groundingSupports,\n        usageMetadata: response.usageMetadata,\n        finishReason: candidate?.finishReason,\n      },\n    });\n\n    return {\n      generations: [{\n        text,\n        message: aiMessage,\n        generationInfo: {\n          finishReason: candidate?.finishReason,\n          groundingChunks: groundingMetadata?.groundingChunks?.length ?? 0,\n          totalTokens: response.usageMetadata?.totalTokenCount,\n        },\n      }],\n      llmOutput: {\n        tokenUsage: {\n          promptTokens: response.usageMetadata?.promptTokenCount,\n          completionTokens: response.usageMetadata?.candidatesTokenCount,\n          totalTokens: response.usageMetadata?.totalTokenCount,\n        },\n      },\n    };\n  }\n\n  bindTools(tools) {\n    console.warn('GeminiFileSearchChatModel: bindTools not supported');\n    return this;\n  }\n}\n\nreturn new GeminiFileSearchChatModel();"
+      },
+      "id": "langchain-code-node",
+      "name": "Gemini File Search Model",
+      "type": "@n8n/n8n-nodes-langchain.code",
+      "typeVersion": 1,
+      "position": [400, 500]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "query-param",
+              "name": "query",
+              "value": "What are the main topics covered in the documents?",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-query-node",
+      "name": "Set Query",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract grounding metadata from AI Agent response\nconst response = $input.first().json;\n\n// Get the output text\nconst outputText = response.output || '';\n\n// Get grounding chunks (source citations)\nconst groundingChunks = response.additional_kwargs?.groundingChunks || [];\n\n// Format citations\nconst citations = groundingChunks.map((chunk, index) => ({\n  index: index + 1,\n  title: chunk.retrievedContext?.title || 'Unknown',\n  text: chunk.retrievedContext?.text?.substring(0, 200) + '...' || '',\n  store: chunk.retrievedContext?.fileSearchStore || 'Unknown'\n}));\n\n// Get token usage\nconst tokenUsage = response.additional_kwargs?.usageMetadata || {};\n\nreturn {\n  answer: outputText,\n  citations: citations,\n  citationCount: citations.length,\n  tokenUsage: {\n    prompt: tokenUsage.promptTokenCount || 0,\n    completion: tokenUsage.candidatesTokenCount || 0,\n    total: tokenUsage.totalTokenCount || 0\n  }\n};"
+      },
+      "id": "process-response-node",
+      "name": "Process Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 300]
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Set Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Query": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini File Search Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Process Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "gemini-file-search-ai-agent"
+  },
+  "pinData": {},
+  "tags": [
+    {
+      "name": "AI",
+      "id": "ai-tag"
+    },
+    {
+      "name": "Gemini",
+      "id": "gemini-tag"
+    },
+    {
+      "name": "RAG",
+      "id": "rag-tag"
+    }
+  ]
+}

@@ -50,7 +50,35 @@ Migrating a large collection of documents into a File Search store, such as impo
 
 ---
 
-### 3. Filtered Search
+### 3. Gemini File Search AI Agent
+**File:** `gemini-file-search-ai-agent.json`
+
+**Description:**
+A complete workflow that uses Gemini File Search as an AI Model (not a tool), enabling **single API call** RAG queries. This approach eliminates the double LLM call overhead when using File Search as a tool.
+
+**Use Case:**
+Building conversational AI agents that can answer questions based on your document knowledge base with minimal API calls and latency.
+
+**What You'll Learn:**
+- How to create a custom LangChain chat model
+- How to integrate with n8n's AI Agent node
+- How to extract and format grounding metadata (citations)
+- How to achieve single-call RAG vs tool-based RAG
+
+**Requirements:**
+- n8n **self-hosted** (LangChain Code Node not available on Cloud)
+- Gemini API key
+- Pre-created File Search Store with documents
+
+**Key Features:**
+- Custom `GeminiFileSearchChatModel` class extending LangChain's `BaseChatModel`
+- Pre-configured `fileSearch` tool embedded in the model
+- Citation extraction and formatting
+- Token usage tracking
+
+---
+
+### 4. Filtered Search
 **File:** `filtered-search.json`
 
 **Description:**
@@ -508,8 +536,8 @@ If you encounter issues or have questions:
 
 ---
 
-**Last Updated:** 2025-11-24
-**Version:** 1.0.0
+**Last Updated:** 2025-11-30
+**Version:** 1.1.0
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

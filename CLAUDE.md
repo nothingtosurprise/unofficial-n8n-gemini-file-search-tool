@@ -25,6 +25,13 @@ This repository contains two custom n8n nodes that integrate with Google's Gemin
    - Delete documents
    - Query documents with metadata filtering
 
+3. **Gemini File Search AI Model** (LangChain Code Node)
+   - Custom `GeminiFileSearchChatModel` class
+   - Single API call RAG queries (vs two-call tool approach)
+   - Works with n8n AI Agent as primary model
+   - Preserves grounding metadata and citations
+   - **Requires**: n8n self-hosted (LangChain Code Node)
+
 ---
 
 ## Mandatory Directives
@@ -84,10 +91,11 @@ npm run build
 ```
 docs/specs/
 ├── phase_01/              # Infrastructure Setup
-├── phase_02/              # Core Implementation (CURRENT)
+├── phase_02/              # Core Implementation
 ├── phase_03/              # Testing Strategy
 ├── phase_04/              # Documentation
-└── phase_05/              # QA & Deployment
+├── phase_05/              # QA & Deployment
+└── phase_06/              # AI Model Integration (CURRENT)
 ```
 
 **Each phase MUST have:**
@@ -265,16 +273,19 @@ report.md                              # Not in proper phase folder!
 |-------|--------|----------|-------|
 | Phase 1: Infrastructure | ✅ Complete | N/A | Framework tests |
 | Phase 2: Core Implementation | ✅ Complete | 98.7% | 198/198 passing |
-| Phase 3: Testing Strategy | ⏳ Pending | - | - |
+| Phase 3: Testing Strategy | ✅ Complete | - | - |
 | Phase 4: Documentation | ⏳ Pending | - | - |
 | Phase 5: QA & Deployment | ⏳ Pending | - | - |
+| Phase 6: AI Model Integration | ✅ Complete | N/A | Manual validation |
 
 **Current Files:**
 - 2 credentials
 - 4 utilities
 - 2 nodes (11 operations total)
+- 1 AI Model (LangChain Code Node)
 - 15 test suites (198 tests)
-- 49 total files (~7,910 LOC)
+- 4 workflow templates
+- 55+ total files
 
 ---
 
@@ -406,8 +417,8 @@ git push                   # Push to remote
 
 ---
 
-**Last Updated:** 2025-11-24
-**Project Version:** 1.0.0
-**Phase:** 2 - Core Implementation (Complete)
+**Last Updated:** 2025-11-30
+**Project Version:** 1.1.0
+**Phase:** 6 - AI Model Integration (Complete)
 
 🤖 This file is maintained by Claude Code
