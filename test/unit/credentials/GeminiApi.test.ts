@@ -66,21 +66,19 @@ describe('GeminiApi Credentials', () => {
       expect(geminiApi.authenticate.type).toBe('generic');
     });
 
-    it('should configure x-goog-api-key header', () => {
+    it('should configure API key in query string', () => {
       expect(geminiApi.authenticate.properties).toBeDefined();
-      expect(geminiApi.authenticate.properties.headers).toBeDefined();
-      if (geminiApi.authenticate.properties.headers) {
-        expect(geminiApi.authenticate.properties.headers['x-goog-api-key']).toBe(
-          '={{$credentials.apiKey}}',
-        );
+      expect(geminiApi.authenticate.properties.qs).toBeDefined();
+      if (geminiApi.authenticate.properties.qs) {
+        expect(geminiApi.authenticate.properties.qs['key']).toBe('={{$credentials.apiKey}}');
       }
     });
 
     it('should use n8n credential interpolation syntax', () => {
-      if (geminiApi.authenticate.properties.headers) {
-        const headerValue = geminiApi.authenticate.properties.headers['x-goog-api-key'];
-        expect(headerValue).toMatch(/^={{.*}}$/);
-        expect(headerValue).toContain('$credentials.apiKey');
+      if (geminiApi.authenticate.properties.qs) {
+        const qsValue = geminiApi.authenticate.properties.qs['key'];
+        expect(qsValue).toMatch(/^={{.*}}$/);
+        expect(qsValue).toContain('$credentials.apiKey');
       }
     });
   });
@@ -216,7 +214,7 @@ describe('GeminiApi Credentials', () => {
 
       expect(authenticate.type).toBe('generic');
       expect(authenticate.properties).toBeDefined();
-      expect(authenticate.properties.headers).toBeDefined();
+      expect(authenticate.properties.qs).toBeDefined();
     });
 
     it('should have properly typed test request', () => {

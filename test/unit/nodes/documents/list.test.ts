@@ -39,6 +39,7 @@ describe('Document List Operation', () => {
       mockGetNodeParameter
         .mockReturnValueOnce('fileSearchStores/test-store') // storeName
         .mockReturnValueOnce(false) // returnAll
+        .mockReturnValueOnce('') // metadataFilter
         .mockReturnValueOnce(10); // limit
 
       const mockDocuments = [
@@ -68,6 +69,7 @@ describe('Document List Operation', () => {
       mockGetNodeParameter
         .mockReturnValueOnce('fileSearchStores/test-store')
         .mockReturnValueOnce(false)
+        .mockReturnValueOnce('') // metadataFilter
         .mockReturnValueOnce(10);
 
       (apiClient.geminiApiRequest as jest.Mock).mockResolvedValue({});

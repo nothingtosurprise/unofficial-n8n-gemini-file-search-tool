@@ -24,6 +24,7 @@ describe('apiClient', () => {
       mockContext = {
         getCredentials: jest.fn().mockResolvedValue({ apiKey: 'test-api-key' }),
         helpers: {
+          httpRequestWithAuthentication: jest.fn().mockResolvedValue({ success: true }),
           request: jest.fn().mockResolvedValue({ success: true }),
         } as any,
         getNode: jest.fn().mockReturnValue({
@@ -39,7 +40,7 @@ describe('apiClient', () => {
 
     it('should make a successful GET request', async () => {
       const response = { data: 'test' };
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValue(response);
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValue(response);
 
       const result = await geminiApiRequest.call(
         mockContext as IExecuteFunctions,
@@ -48,13 +49,11 @@ describe('apiClient', () => {
       );
 
       expect(result).toEqual(response);
-      expect(mockContext.helpers!.request).toHaveBeenCalledWith({
+      expect(mockContext.helpers!.httpRequestWithAuthentication).toHaveBeenCalledWith('geminiApi', {
         method: 'GET',
         body: {},
-        qs: {
-          key: 'test-api-key',
-        },
-        uri: 'https://generativelanguage.googleapis.com/v1beta/fileSearchStores',
+        qs: {},
+        url: 'https://generativelanguage.googleapis.com/v1beta/fileSearchStores',
         json: true,
       });
     });
@@ -62,7 +61,7 @@ describe('apiClient', () => {
     it('should make a successful POST request with body', async () => {
       const body = { name: 'test-store', displayName: 'Test Store' };
       const response = { name: 'fileSearchStores/test-store' };
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValue(response);
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValue(response);
 
       const result = await geminiApiRequest.call(
         mockContext as IExecuteFunctions,
@@ -72,19 +71,19 @@ describe('apiClient', () => {
       );
 
       expect(result).toEqual(response);
-      expect(mockContext.helpers!.request).toHaveBeenCalledWith({
+      expect(mockContext.helpers!.httpRequestWithAuthentication).toHaveBeenCalledWith('geminiApi', {
         method: 'POST',
         body,
-        qs: {
-          key: 'test-api-key',
-        },
-        uri: 'https://generativelanguage.googleapis.com/v1beta/fileSearchStores',
+        qs: {},
+        url: 'https://generativelanguage.googleapis.com/v1beta/fileSearchStores',
         json: true,
       });
     });
 
     it('should include query string parameters', async () => {
       const qs = { pageSize: 10, filter: 'active' };
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValue({});
+
       await geminiApiRequest.call(
         mockContext as IExecuteFunctions,
         'GET',
@@ -93,19 +92,17 @@ describe('apiClient', () => {
         qs,
       );
 
-      expect(mockContext.helpers!.request).toHaveBeenCalledWith(
+      expect(mockContext.helpers!.httpRequestWithAuthentication).toHaveBeenCalledWith(
+        'geminiApi',
         expect.objectContaining({
-          qs: {
-            ...qs,
-            key: 'test-api-key',
-          },
+          qs,
         }),
       );
     });
 
     it('should throw NodeApiError on request failure', async () => {
       const error = new Error('Network error');
-      (mockContext.helpers!.request as jest.Mock).mockRejectedValue(error);
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockRejectedValue(error);
 
       await expect(
         geminiApiRequest.call(mockContext as IExecuteFunctions, 'GET', '/fileSearchStores'),
@@ -114,7 +111,7 @@ describe('apiClient', () => {
 
     it('should handle 404 errors', async () => {
       const error = { statusCode: 404, message: 'Not Found' };
-      (mockContext.helpers!.request as jest.Mock).mockRejectedValue(error);
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockRejectedValue(error);
 
       await expect(
         geminiApiRequest.call(
@@ -127,7 +124,7 @@ describe('apiClient', () => {
 
     it('should handle 401 unauthorized errors', async () => {
       const error = { statusCode: 401, message: 'Unauthorized' };
-      (mockContext.helpers!.request as jest.Mock).mockRejectedValue(error);
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockRejectedValue(error);
 
       await expect(
         geminiApiRequest.call(mockContext as IExecuteFunctions, 'GET', '/fileSearchStores'),
@@ -136,7 +133,7 @@ describe('apiClient', () => {
 
     it('should handle 429 rate limit errors', async () => {
       const error = { statusCode: 429, message: 'Rate limit exceeded' };
-      (mockContext.helpers!.request as jest.Mock).mockRejectedValue(error);
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockRejectedValue(error);
 
       await expect(
         geminiApiRequest.call(mockContext as IExecuteFunctions, 'GET', '/fileSearchStores'),
@@ -151,6 +148,7 @@ describe('apiClient', () => {
       mockContext = {
         getCredentials: jest.fn().mockResolvedValue({ apiKey: 'test-api-key' }),
         helpers: {
+          httpRequestWithAuthentication: jest.fn(),
           request: jest.fn(),
         } as any,
         getNode: jest.fn().mockReturnValue({
@@ -166,7 +164,7 @@ describe('apiClient', () => {
 
     it('should retrieve all items with pagination', async () => {
       // Mock paginated responses
-      (mockContext.helpers!.request as jest.Mock)
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock)
         .mockResolvedValueOnce({
           stores: [{ name: 'store1' }, { name: 'store2' }],
           nextPageToken: 'page2',
@@ -195,11 +193,11 @@ describe('apiClient', () => {
         { name: 'store4' },
         { name: 'store5' },
       ]);
-      expect(mockContext.helpers!.request).toHaveBeenCalledTimes(3);
+      expect(mockContext.helpers!.httpRequestWithAuthentication).toHaveBeenCalledTimes(3);
     });
 
     it('should handle single page response', async () => {
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValueOnce({
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValueOnce({
         documents: [{ name: 'doc1' }],
         nextPageToken: undefined,
       });
@@ -213,11 +211,11 @@ describe('apiClient', () => {
 
       expect(result).toHaveLength(1);
       expect(result).toEqual([{ name: 'doc1' }]);
-      expect(mockContext.helpers!.request).toHaveBeenCalledTimes(1);
+      expect(mockContext.helpers!.httpRequestWithAuthentication).toHaveBeenCalledTimes(1);
     });
 
     it('should use default page size of 20', async () => {
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValueOnce({
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValueOnce({
         stores: [],
         nextPageToken: undefined,
       });
@@ -229,7 +227,8 @@ describe('apiClient', () => {
         '/fileSearchStores',
       );
 
-      expect(mockContext.helpers!.request).toHaveBeenCalledWith(
+      expect(mockContext.helpers!.httpRequestWithAuthentication).toHaveBeenCalledWith(
+        'geminiApi',
         expect.objectContaining({
           qs: expect.objectContaining({
             pageSize: 20,
@@ -239,7 +238,7 @@ describe('apiClient', () => {
     });
 
     it('should respect custom page size', async () => {
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValueOnce({
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValueOnce({
         stores: [],
         nextPageToken: undefined,
       });
@@ -253,7 +252,8 @@ describe('apiClient', () => {
         { pageSize: 10 },
       );
 
-      expect(mockContext.helpers!.request).toHaveBeenCalledWith(
+      expect(mockContext.helpers!.httpRequestWithAuthentication).toHaveBeenCalledWith(
+        'geminiApi',
         expect.objectContaining({
           qs: expect.objectContaining({
             pageSize: 10,
@@ -263,7 +263,7 @@ describe('apiClient', () => {
     });
 
     it('should handle empty results', async () => {
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValueOnce({
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValueOnce({
         stores: [],
         nextPageToken: undefined,
       });
@@ -279,7 +279,7 @@ describe('apiClient', () => {
     });
 
     it('should handle missing property in response', async () => {
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValueOnce({
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValueOnce({
         nextPageToken: undefined,
       });
 
@@ -432,6 +432,7 @@ describe('apiClient', () => {
       mockContext = {
         getCredentials: jest.fn().mockResolvedValue({ apiKey: 'test-api-key' }),
         helpers: {
+          httpRequestWithAuthentication: jest.fn(),
           request: jest.fn(),
         } as any,
         getNode: jest.fn().mockReturnValue({
@@ -447,7 +448,7 @@ describe('apiClient', () => {
 
     it('should return response when operation completes successfully', async () => {
       const response = { document: { name: 'fileSearchStores/test/documents/doc1' } };
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValueOnce({
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValueOnce({
         done: true,
         response,
       });
@@ -460,13 +461,13 @@ describe('apiClient', () => {
       );
 
       expect(result).toEqual(response);
-      expect(mockContext.helpers!.request).toHaveBeenCalledTimes(1);
+      expect(mockContext.helpers!.httpRequestWithAuthentication).toHaveBeenCalledTimes(1);
     });
 
     it('should poll multiple times until completion', async () => {
       const response = { document: { name: 'fileSearchStores/test/documents/doc1' } };
 
-      (mockContext.helpers!.request as jest.Mock)
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock)
         .mockResolvedValueOnce({ done: false })
         .mockResolvedValueOnce({ done: false })
         .mockResolvedValueOnce({ done: true, response });
@@ -479,11 +480,11 @@ describe('apiClient', () => {
       );
 
       expect(result).toEqual(response);
-      expect(mockContext.helpers!.request).toHaveBeenCalledTimes(3);
+      expect(mockContext.helpers!.httpRequestWithAuthentication).toHaveBeenCalledTimes(3);
     });
 
     it('should throw error when operation fails', async () => {
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValue({
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValue({
         done: true,
         error: {
           code: 400,
@@ -511,7 +512,7 @@ describe('apiClient', () => {
         ],
       };
 
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValue({
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValue({
         done: true,
         error: {
           code: 404,
@@ -537,7 +538,7 @@ describe('apiClient', () => {
     });
 
     it('should handle operation error without details', async () => {
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValue({
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValue({
         done: true,
         error: {
           code: 500,
@@ -559,7 +560,9 @@ describe('apiClient', () => {
     });
 
     it('should timeout after max attempts', async () => {
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValue({ done: false });
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValue({
+        done: false,
+      });
 
       await expect(
         pollOperation.call(mockContext as IExecuteFunctions, 'operations/abc123', 3, 50),
@@ -569,11 +572,11 @@ describe('apiClient', () => {
         pollOperation.call(mockContext as IExecuteFunctions, 'operations/abc123', 3, 50),
       ).rejects.toThrow('Operation timeout: exceeded 10 minutes');
 
-      expect(mockContext.helpers!.request).toHaveBeenCalled();
+      expect(mockContext.helpers!.httpRequestWithAuthentication).toHaveBeenCalled();
     });
 
     it('should use default parameters', async () => {
-      (mockContext.helpers!.request as jest.Mock).mockResolvedValueOnce({
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock).mockResolvedValueOnce({
         done: true,
         response: { success: true },
       });
@@ -588,7 +591,7 @@ describe('apiClient', () => {
 
     it('should wait between poll attempts', async () => {
       const startTime = Date.now();
-      (mockContext.helpers!.request as jest.Mock)
+      (mockContext.helpers!.httpRequestWithAuthentication as jest.Mock)
         .mockResolvedValueOnce({ done: false })
         .mockResolvedValueOnce({ done: true, response: { success: true } });
 

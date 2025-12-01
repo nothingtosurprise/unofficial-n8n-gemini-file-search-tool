@@ -6,6 +6,24 @@
 
 Community nodes for integrating Google's Gemini File Search Tool API with n8n workflows. Build powerful document search and retrieval systems with AI-powered semantic search capabilities.
 
+---
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/mbradaschia" target="_blank">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="60">
+  </a>
+</p>
+
+<p align="center">
+  <b>If you find this project helpful, consider buying me a coffee!</b>
+</p>
+
+<p align="center">
+  <img src="docs/BMC/qr-code.png" alt="Buy Me a Coffee QR Code" width="150">
+</p>
+
+---
+
 ## Features
 
 ### Gemini File Search Stores Node
@@ -35,19 +53,6 @@ Community nodes for integrating Google's Gemini File Search Tool API with n8n wo
   - Preserve and merge metadata from old document
   - Multiple merge strategies (prefer new, prefer old, merge all)
 
-### Gemini File Search AI Model (LangChain Code Node)
-
-**New in v1.1.0**: Use Gemini File Search as an AI Model for **single API call** RAG queries.
-
-- **Single Call Architecture**: Eliminates the double LLM call overhead when using File Search as a tool
-- **AI Agent Integration**: Works directly with n8n's AI Agent node
-- **Custom LangChain Model**: `GeminiFileSearchChatModel` extends LangChain's `BaseChatModel`
-- **Full Citation Support**: Preserves grounding metadata and citations
-
-> **Note**: Requires n8n **self-hosted** (LangChain Code Node not available on Cloud)
-
-See [AI Agent Integration](#ai-agent-integration) for setup instructions.
-
 ## Installation
 
 ### From npm
@@ -67,8 +72,8 @@ npm install n8n-nodes-gemini-file-search
 
 ```bash
 # Clone the repository
-git clone https://github.com/Brada-io/n8n-nodes-gemini-file-search-tool.git
-cd n8n-nodes-gemini-file-search-tool
+git clone https://github.com/mbradaschia/unofficial-n8n-gemini-file-search-tool.git
+cd unofficial-n8n-gemini-file-search-tool
 
 # Install dependencies
 npm install
@@ -215,52 +220,6 @@ When replacing documents, you can preserve metadata from the old document:
 - **Merge All**: All unique keys from both old and new are included
 - **Use Old Only**: Only use old metadata, ignore new
 
-## AI Agent Integration
-
-Use Gemini File Search as an AI Model (not a tool) for efficient single-call RAG queries.
-
-### Why Use AI Model vs Tool?
-
-| Approach | API Calls | Use Case |
-|----------|-----------|----------|
-| **Tool** (current Query op) | 2 calls | AI Agent decides when to search |
-| **AI Model** (LangChain) | 1 call | Every query searches documents |
-
-### Setup
-
-1. **Requirements**
-   - n8n **self-hosted** (v1.80+)
-   - Gemini API key
-   - Pre-created File Search Store with documents
-
-2. **Import Workflow Template**
-   - Download from `docs/examples/gemini-file-search-ai-agent.json`
-   - In n8n: **Workflows** → **Import from File**
-
-3. **Configure the Model**
-   - Open the "Gemini File Search Model" node
-   - Update the CONFIG object:
-   ```javascript
-   const CONFIG = {
-     apiKey: 'YOUR_API_KEY',
-     model: 'gemini-2.5-flash',
-     storeNames: ['fileSearchStores/your-store-name'],
-     metadataFilter: '',  // Optional
-     temperature: 0.7,
-     maxOutputTokens: 2048,
-   };
-   ```
-
-4. **Test**
-   - Click "Test workflow"
-   - Check the "Process Response" node for formatted output with citations
-
-### Documentation
-
-- [Usage Guide](docs/specs/phase_06/reports/6.3-usage-guide.md) - Detailed setup and configuration
-- [Model Implementation](docs/specs/phase_06/reports/6.1-langchain-model.md) - Technical details
-- [Workflow Template](docs/specs/phase_06/reports/6.2-workflow-template.md) - Workflow structure
-
 ## Documentation
 
 - **[Project Structure](docs/PROJECT_STRUCTURE.md)**: Overview of codebase organization
@@ -268,7 +227,6 @@ Use Gemini File Search as an AI Model (not a tool) for efficient single-call RAG
   - [File Search Stores](docs/refs/gemini/file-search-stores.md)
   - [Documents](docs/refs/gemini/document.md)
 - **[Development Guide](docs/specs/)**: Implementation plans and guides
-- **[AI Model Integration](docs/specs/phase_06/)**: LangChain Code Node implementation
 
 ## API Limits
 
@@ -398,9 +356,19 @@ Copyright (c) 2025 Brada
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/Brada-io/n8n-nodes-gemini-file-search-tool/issues)
+- **Issues**: [GitHub Issues](https://github.com/mbradaschia/unofficial-n8n-gemini-file-search-tool/issues)
 - **Documentation**: [docs/](docs/)
 - **n8n Community**: [community.n8n.io](https://community.n8n.io)
+
+---
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/mbradaschia" target="_blank">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50">
+  </a>
+</p>
+
+---
 
 ## Acknowledgments
 
