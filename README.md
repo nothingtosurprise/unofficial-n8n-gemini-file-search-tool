@@ -19,7 +19,7 @@ Community nodes for integrating Google's Gemini File Search Tool API with n8n wo
 </p>
 
 <p align="center">
-  <img src="docs/BMC/qr-code.png" alt="Buy Me a Coffee QR Code" width="150">
+  <img src="docs/images/qr-code.png" alt="Buy Me a Coffee QR Code" width="150">
 </p>
 
 ---
@@ -87,7 +87,77 @@ cd ~/.n8n/nodes
 npm link n8n-nodes-gemini-file-search
 ```
 
+## Some screenshots
+
+### Easly upload documents to Gemini File Search Stores
+
+**No complex embeddings, vector stores, etc. Just create a store using the Store node and upload your docs as they are!**
+
+Use case examples:
+
+- Track files in your folders and upload when added/changed
+- Track your Obsidian folder to create your PKM, using metadata
+- Upload invoices, contracts, reports to create a company knowledge base
+- Upload research papers, articles, books to create a personal library
+- And many more...
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/mbradaschia" target="_blank">
+    <img src="docs/images/simple upload.png"
+    alt="Simple upload" width="500">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/mbradaschia" target="_blank">
+    <img src="docs/images/node upload options.png"
+    alt="Upload options" width="300">
+  </a>
+</p>
+
+
+### Easily query your documents with Gemini RAG capabilities
+**No complex retrieval systems, vector searches, etc. Just query your documents from the File Store using Gemini models!**
+
+<p align="center">
+  <img src="docs/images/simple query.png"
+  alt="Easy query" width="500">
+</p>
+
+<p align="center">
+  <img src="docs/images/node query options.png"
+  alt="Buy Me A Coffee" width="300">
+</p>
+
+
+### Easily manage documents
+**Upload, delete, replace/upload documents**
+
+<p align="center">
+  <img src="docs/images/node options.png"
+  alt="Manage documents" width="300">
+
+
+### File Store node, Document node and Document tools
+
+<p align="center">
+  <img src="docs/images/nodes and tool.png"
+  alt="Nodes and tool" width="300">
+</p>
+
+
 ## Quick Start
+
+For detailed instructions, see the <b>[Building a Knowledge Base Tutorial](docs/tutorials/building-a-knowledge-base.md)</b>.
+
+<a href="/docs/nodes/gemini-file-search-stores.md" target="_blank">
+>> <b>GEMINI FILE STORE NODE DOCUMENTATION</b>
+</a>
+<br/>
+<a href="/docs/nodes/gemini-file-search-documents.md" target="_blank">
+>> <b>GEMINI FILE SEARCH DOCUMENT NODE DOCUMENTATION</b>
+</a>
+
 
 ### 1. Set Up Credentials
 
@@ -385,4 +455,3 @@ Copyright (c) 2025 Brada
 
 Made with ❤️ for the n8n community
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
