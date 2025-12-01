@@ -107,10 +107,8 @@ Use case examples:
 </p>
 
 <p align="center">
-  <a href="https://www.buymeacoffee.com/mbradaschia" target="_blank">
     <img src="docs/images/node upload options.png"
     alt="Upload options" width="300">
-  </a>
 </p>
 
 
