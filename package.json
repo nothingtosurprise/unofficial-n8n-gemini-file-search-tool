@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-gemini-file-search",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "n8n community nodes for Google Gemini File Search Tool API - Build powerful document search and RAG systems with AI-powered semantic search",
   "keywords": [
     "n8n",

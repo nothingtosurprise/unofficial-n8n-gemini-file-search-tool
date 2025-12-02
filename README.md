@@ -102,12 +102,12 @@ Use case examples:
 - And many more...
 
 <p align="center">
-    <img src="docs/images/simple upload.png"
+    <img src="docs/images/simple-upload.png"
     alt="Simple upload" width="500">
 </p>
 
 <p align="center">
-    <img src="docs/images/node upload options.png"
+    <img src="docs/images/node-upload-options.png"
     alt="Upload options" width="300">
 </p>
 
@@ -116,13 +116,13 @@ Use case examples:
 **No complex retrieval systems, vector searches, etc. Just query your documents from the File Store using Gemini models!**
 
 <p align="center">
-  <img src="docs/images/simple query.png"
+  <img src="docs/images/simple-query.png"
   alt="Easy query" width="500">
 </p>
 
 <p align="center">
-  <img src="docs/images/node query options.png"
-  alt="Buy Me A Coffee" width="300">
+  <img src="docs/images/node-query-options.png"
+  alt="Query options" width="300">
 </p>
 
 
@@ -130,14 +130,14 @@ Use case examples:
 **Upload, delete, replace/upload documents**
 
 <p align="center">
-  <img src="docs/images/node options.png"
+  <img src="docs/images/node-options.png"
   alt="Manage documents" width="300">
-
+</p>
 
 ### File Store node, Document node and Document tools
 
 <p align="center">
-  <img src="docs/images/nodes and tool.png"
+  <img src="docs/images/nodes-and-tool.png"
   alt="Nodes and tool" width="300">
 </p>
 
