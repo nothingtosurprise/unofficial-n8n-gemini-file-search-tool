@@ -45,8 +45,7 @@ export const documentOperations: INodeProperties[] = [
       {
         name: 'Query',
         value: 'query',
-        description:
-          'Query documents using Gemini RAG (Retrieval-Augmented Generation). Searches your File Search stores and returns an AI-generated answer with source citations. Response structure: { candidates: [{ content: { parts: [{ text: "The answer..." }] }, groundingMetadata: { groundingChunks: [{ retrievedContext: { uri: "fileSearchStores/.../documents/...", title: "Document Name" } }], groundingSupports: [{ segment: { text: "cited text" }, groundingChunkIndices: [0], confidenceScores: [0.95] }] } }], usageMetadata: { totalTokenCount: 150 } }. Use groundingChunks to get source document references and groundingSupports to map which parts of the answer came from which sources.',
+        description: 'Query documents using Gemini RAG with source citations',
         action: 'Query documents',
       },
       {
