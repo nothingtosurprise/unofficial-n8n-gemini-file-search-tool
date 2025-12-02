@@ -1,11 +1,17 @@
 import {
   IExecuteFunctions,
+  ILoadOptionsFunctions,
   INodeExecutionData,
+  INodeListSearchItems,
+  INodeListSearchResult,
+  INodePropertyOptions,
   INodeType,
   INodeTypeDescription,
 } from 'n8n-workflow';
 import { documentFields, documentOperations } from './descriptions/DocumentDescription';
 import { executeDocumentOperation } from './operations/document';
+import { geminiApiRequestAllItems } from '../../utils/apiClient';
+import { FileSearchStore } from '../../utils/types';
 
 export class GeminiFileSearchDocuments implements INodeType {
   description: INodeTypeDescription = {
@@ -46,6 +52,58 @@ export class GeminiFileSearchDocuments implements INodeType {
       ...documentOperations,
       ...documentFields,
     ],
+  };
+
+  methods = {
+    // listSearch is used by resourceLocator fields (upload, import, list, replaceUpload operations)
+    listSearch: {
+      async getStores(
+        this: ILoadOptionsFunctions,
+        filter?: string,
+      ): Promise<INodeListSearchResult> {
+        const stores = (await geminiApiRequestAllItems.call(
+          this,
+          'fileSearchStores',
+          'GET',
+          '/fileSearchStores',
+        )) as FileSearchStore[];
+
+        let results: INodeListSearchItems[] = stores.map((store) => ({
+          name: store.displayName || store.name.split('/').pop() || store.name,
+          value: store.name,
+          url: `https://aistudio.google.com/prompts?state=%7B%22fileSearchStoreName%22:%22${encodeURIComponent(store.name)}%22%7D`,
+        }));
+
+        // Apply filter if provided
+        if (filter) {
+          const lowerFilter = filter.toLowerCase();
+          results = results.filter(
+            (item) =>
+              item.name.toLowerCase().includes(lowerFilter) ||
+              String(item.value).toLowerCase().includes(lowerFilter),
+          );
+        }
+
+        return { results };
+      },
+    },
+    // loadOptions is used by multiOptions field (Query operation's storeNames)
+    loadOptions: {
+      async getStores(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const stores = (await geminiApiRequestAllItems.call(
+          this,
+          'fileSearchStores',
+          'GET',
+          '/fileSearchStores',
+        )) as FileSearchStore[];
+
+        return stores.map((store) => ({
+          name: store.displayName || store.name.split('/').pop() || store.name,
+          value: store.name,
+          description: `Created: ${new Date(store.createTime).toLocaleDateString()}`,
+        }));
+      },
+    },
   };
 
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {

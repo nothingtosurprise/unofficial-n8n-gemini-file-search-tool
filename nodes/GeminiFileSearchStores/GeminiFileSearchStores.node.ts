@@ -1,11 +1,16 @@
 import {
   IExecuteFunctions,
+  ILoadOptionsFunctions,
   INodeExecutionData,
+  INodeListSearchItems,
+  INodeListSearchResult,
   INodeType,
   INodeTypeDescription,
 } from 'n8n-workflow';
 import { storeFields } from './descriptions/StoreDescription';
 import * as store from './operations/store';
+import { geminiApiRequestAllItems } from '../../utils/apiClient';
+import { FileSearchStore } from '../../utils/types';
 
 export class GeminiFileSearchStores implements INodeType {
   description: INodeTypeDescription = {
@@ -69,6 +74,40 @@ export class GeminiFileSearchStores implements INodeType {
       },
       ...storeFields,
     ],
+  };
+
+  methods = {
+    listSearch: {
+      async getStores(
+        this: ILoadOptionsFunctions,
+        filter?: string,
+      ): Promise<INodeListSearchResult> {
+        const stores = (await geminiApiRequestAllItems.call(
+          this,
+          'fileSearchStores',
+          'GET',
+          '/fileSearchStores',
+        )) as FileSearchStore[];
+
+        let results: INodeListSearchItems[] = stores.map((store) => ({
+          name: store.displayName || store.name.split('/').pop() || store.name,
+          value: store.name,
+          url: `https://aistudio.google.com/prompts?state=%7B%22fileSearchStoreName%22:%22${encodeURIComponent(store.name)}%22%7D`,
+        }));
+
+        // Apply filter if provided
+        if (filter) {
+          const lowerFilter = filter.toLowerCase();
+          results = results.filter(
+            (item) =>
+              item.name.toLowerCase().includes(lowerFilter) ||
+              String(item.value).toLowerCase().includes(lowerFilter),
+          );
+        }
+
+        return { results };
+      },
+    },
   };
 
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {

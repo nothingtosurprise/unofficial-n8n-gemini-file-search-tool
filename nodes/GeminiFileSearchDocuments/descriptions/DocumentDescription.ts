@@ -65,16 +65,42 @@ export const documentFields: INodeProperties[] = [
   {
     displayName: 'Store',
     name: 'storeName',
-    type: 'string',
-    default: '',
+    type: 'resourceLocator',
     required: true,
+    default: { mode: 'list', value: '' },
     displayOptions: {
       show: {
         operation: ['upload', 'import', 'list', 'replaceUpload'],
       },
     },
-    placeholder: 'fileSearchStores/my-store-123',
-    description: 'The name of the File Search store',
+    description: 'The File Search store to operate on',
+    modes: [
+      {
+        displayName: 'From List',
+        name: 'list',
+        type: 'list',
+        placeholder: 'Select a store...',
+        typeOptions: {
+          searchListMethod: 'getStores',
+          searchable: true,
+        },
+      },
+      {
+        displayName: 'By Name',
+        name: 'name',
+        type: 'string',
+        placeholder: 'fileSearchStores/my-store-123',
+        validation: [
+          {
+            type: 'regex',
+            properties: {
+              regex: '^fileSearchStores/.+$',
+              errorMessage: 'Store name must be in format: fileSearchStores/store-id',
+            },
+          },
+        ],
+      },
+    ],
   },
 
   // Upload operation fields
@@ -450,6 +476,33 @@ export const documentFields: INodeProperties[] = [
     description:
       'Filter documents by metadata (AIP-160 format). Note: Filtering happens client-side after fetching all documents.',
   },
+  {
+    displayName: 'Delete Duplicates',
+    name: 'deleteDuplicates',
+    type: 'boolean',
+    default: false,
+    displayOptions: {
+      show: {
+        operation: ['list'],
+      },
+    },
+    hint: 'Deletes older documents with the same display name, keeping only the most recent',
+    description:
+      'When enabled, identifies documents with duplicate display names and deletes all but the most recent version (based on creation time). The deleted documents info is included in the output.',
+  },
+  {
+    displayName: 'Force Delete Duplicates',
+    name: 'forceDeleteDuplicates',
+    type: 'boolean',
+    default: true,
+    displayOptions: {
+      show: {
+        operation: ['list'],
+        deleteDuplicates: [true],
+      },
+    },
+    description: 'Whether to force delete duplicate documents even if they contain chunks',
+  },
 
   // Get/Delete operation fields
   {
@@ -545,16 +598,18 @@ export const documentFields: INodeProperties[] = [
   {
     displayName: 'Store Names',
     name: 'storeNames',
-    type: 'string',
+    type: 'multiOptions',
     required: true,
     displayOptions: {
       show: {
         operation: ['query'],
       },
     },
-    default: '',
-    description: 'Comma-separated list of store names to search',
-    placeholder: 'fileSearchStores/store-1,fileSearchStores/store-2',
+    default: [],
+    description: 'Select one or more stores to search. Use expressions for dynamic values.',
+    typeOptions: {
+      loadOptionsMethod: 'getStores',
+    },
   },
   {
     displayName: 'Metadata Filter',

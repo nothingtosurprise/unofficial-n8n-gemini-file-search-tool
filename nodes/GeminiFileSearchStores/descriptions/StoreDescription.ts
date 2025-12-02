@@ -17,18 +17,44 @@ export const storeFields: INodeProperties[] = [
 
   // Get/Delete operation fields
   {
-    displayName: 'Store Name',
+    displayName: 'Store',
     name: 'storeName',
-    type: 'string',
+    type: 'resourceLocator',
     required: true,
-    default: '',
+    default: { mode: 'list', value: '' },
     displayOptions: {
       show: {
         operation: ['get', 'delete'],
       },
     },
-    placeholder: 'fileSearchStores/my-store-123',
-    description: 'The resource name of the store',
+    description: 'The File Search store to operate on',
+    modes: [
+      {
+        displayName: 'From List',
+        name: 'list',
+        type: 'list',
+        placeholder: 'Select a store...',
+        typeOptions: {
+          searchListMethod: 'getStores',
+          searchable: true,
+        },
+      },
+      {
+        displayName: 'By Name',
+        name: 'name',
+        type: 'string',
+        placeholder: 'fileSearchStores/my-store-123',
+        validation: [
+          {
+            type: 'regex',
+            properties: {
+              regex: '^fileSearchStores/.+$',
+              errorMessage: 'Store name must be in format: fileSearchStores/store-id',
+            },
+          },
+        ],
+      },
+    ],
   },
 
   // Delete operation fields
