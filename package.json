@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-gemini-file-search",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "n8n community nodes for Google Gemini File Search Tool API - Build powerful document search and RAG systems with AI-powered semantic search",
   "keywords": [
     "n8n",
@@ -40,13 +40,14 @@
     "format": "prettier --write \"**/*.{ts,json,md}\"",
     "test": "jest",
     "test:unit": "jest --testPathPattern=test/unit",
-    "test:integration": "jest --testPathPattern=test/integration",
-    "test:e2e": "jest --testPathPattern=test/e2e",
-    "test:performance": "jest --testPathPattern=test/performance --runInBand",
+    "test:integration:real": "jest --testPathPattern=test/integration --testPathIgnorePatterns='' --runInBand",
+    "test:e2e:real": "jest --testPathPattern=test/e2e --testPathIgnorePatterns='' --runInBand",
+    "test:performance:real": "jest --testPathPattern=test/performance --testPathIgnorePatterns='' --runInBand",
+    "test:all:real": "jest --testPathIgnorePatterns='/node_modules/' --runInBand",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "prepare": "husky install",
-    "prepublishOnly": "npm run build && npm run lint && npm run test:unit"
+    "prepublishOnly": "npm run build && npm run lint && npm run test"
   },
   "files": [
     "dist"

@@ -66,7 +66,7 @@ export async function list(
   this: IExecuteFunctions,
   index: number,
 ): Promise<Document[] | ListResultWithDuplicates> {
-  const storeName = this.getNodeParameter('storeName', index) as string;
+  const storeName = this.getNodeParameter('storeName', index, '', { extractValue: true }) as string;
   const returnAll = this.getNodeParameter('returnAll', index) as boolean;
   const metadataFilter = this.getNodeParameter('metadataFilter', index, '') as string;
   const deleteDuplicates = this.getNodeParameter('deleteDuplicates', index, false) as boolean;

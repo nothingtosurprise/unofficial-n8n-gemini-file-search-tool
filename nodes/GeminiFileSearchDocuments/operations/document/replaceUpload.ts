@@ -75,7 +75,7 @@ export async function replaceUpload(
   index: number,
 ): Promise<ReplaceUploadResult> {
   // 1. Get all parameters
-  const storeName = this.getNodeParameter('storeName', index) as string;
+  const storeName = this.getNodeParameter('storeName', index, '', { extractValue: true }) as string;
   const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index);
   const displayName = this.getNodeParameter('displayName', index) as string; // Now required
   const matchBy = this.getNodeParameter('matchBy', index, 'none') as MatchByType;

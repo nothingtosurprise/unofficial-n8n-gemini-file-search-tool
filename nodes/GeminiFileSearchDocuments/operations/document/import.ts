@@ -50,7 +50,7 @@ interface ChunkingOptionsParam {
  * ```
  */
 export async function importFile(this: IExecuteFunctions, index: number): Promise<Operation> {
-  const storeName = this.getNodeParameter('storeName', index) as string;
+  const storeName = this.getNodeParameter('storeName', index, '', { extractValue: true }) as string;
   const fileName = this.getNodeParameter('fileName', index) as string;
   const displayName = this.getNodeParameter('displayName', index, '') as string;
   const waitForCompletion = this.getNodeParameter('waitForCompletion', index) as boolean;

@@ -52,7 +52,7 @@ interface ChunkingOptionsParam {
  * ```
  */
 export async function upload(this: IExecuteFunctions, index: number): Promise<Operation> {
-  const storeName = this.getNodeParameter('storeName', index) as string;
+  const storeName = this.getNodeParameter('storeName', index, '', { extractValue: true }) as string;
   const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index);
   const displayName = this.getNodeParameter('displayName', index, '') as string;
   const waitForCompletion = this.getNodeParameter('waitForCompletion', index) as boolean;

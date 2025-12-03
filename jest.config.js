@@ -2,7 +2,15 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/test'],
-  testMatch: ['**/*.test.ts'],
+  // Only run unit tests by default (mock-based, no real API calls)
+  testMatch: ['**/test/unit/**/*.test.ts'],
+  // Explicitly exclude tests that make real API calls
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/test/integration/',
+    '/test/e2e/',
+    '/test/performance/',
+  ],
   collectCoverageFrom: [
     'nodes/**/*.ts',
     'credentials/**/*.ts',

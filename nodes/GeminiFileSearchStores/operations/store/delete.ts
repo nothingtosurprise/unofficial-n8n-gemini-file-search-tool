@@ -29,7 +29,7 @@ interface DeleteResponse {
  * ```
  */
 export async function deleteStore(this: IExecuteFunctions, index: number): Promise<DeleteResponse> {
-  const storeName = this.getNodeParameter('storeName', index) as string;
+  const storeName = this.getNodeParameter('storeName', index, '', { extractValue: true }) as string;
   const force = this.getNodeParameter('force', index) as boolean;
 
   validateStoreName.call(this, storeName);

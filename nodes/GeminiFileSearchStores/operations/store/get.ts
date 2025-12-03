@@ -24,7 +24,7 @@ import { validateStoreName } from '../../../../utils/validators';
  * ```
  */
 export async function get(this: IExecuteFunctions, index: number): Promise<FileSearchStore> {
-  const storeName = this.getNodeParameter('storeName', index) as string;
+  const storeName = this.getNodeParameter('storeName', index, '', { extractValue: true }) as string;
   validateStoreName.call(this, storeName);
 
   // API client returns 'any', but we know the endpoint returns a FileSearchStore

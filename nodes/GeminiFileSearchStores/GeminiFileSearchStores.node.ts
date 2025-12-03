@@ -92,7 +92,6 @@ export class GeminiFileSearchStores implements INodeType {
         let results: INodeListSearchItems[] = stores.map((store) => ({
           name: store.displayName || store.name.split('/').pop() || store.name,
           value: store.name,
-          url: `https://aistudio.google.com/prompts?state=%7B%22fileSearchStoreName%22:%22${encodeURIComponent(store.name)}%22%7D`,
         }));
 
         // Apply filter if provided
