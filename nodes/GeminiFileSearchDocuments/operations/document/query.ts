@@ -116,7 +116,9 @@ export async function query(this: IExecuteFunctions, index: number): Promise<Que
   const model = this.getNodeParameter('model', index) as string;
   const systemPrompt = this.getNodeParameter('systemPrompt', index, '') as string;
   const queryText = this.getNodeParameter('query', index) as string;
-  const storeNamesParam = this.getNodeParameter('storeNames', index) as string | string[];
+  const storeNamesParam = this.getNodeParameter('storeNames', index, [], {
+    extractValue: true,
+  }) as string | string[];
   const metadataFilter = this.getNodeParameter('metadataFilter', index, '') as string;
   const includeSourceMetadata = this.getNodeParameter(
     'includeSourceMetadata',
