@@ -596,20 +596,44 @@ export const documentFields: INodeProperties[] = [
     placeholder: 'What are the key findings about transformer models?',
   },
   {
-    displayName: 'Store Names',
-    name: 'storeNames',
-    type: 'multiOptions',
+    displayName: 'Store',
+    name: 'storeName',
+    type: 'resourceLocator',
     required: true,
+    default: { mode: 'list', value: '' },
     displayOptions: {
       show: {
         operation: ['query'],
       },
     },
-    default: [],
-    description: 'Select one or more stores to search. Use expressions for dynamic values.',
-    typeOptions: {
-      loadOptionsMethod: 'getStores',
-    },
+    description: 'The File Search store to query',
+    modes: [
+      {
+        displayName: 'From List',
+        name: 'list',
+        type: 'list',
+        placeholder: 'Select a store...',
+        typeOptions: {
+          searchListMethod: 'getStores',
+          searchable: true,
+        },
+      },
+      {
+        displayName: 'By Name',
+        name: 'name',
+        type: 'string',
+        placeholder: 'fileSearchStores/my-store-123',
+        validation: [
+          {
+            type: 'regex',
+            properties: {
+              regex: '^fileSearchStores/.+$',
+              errorMessage: 'Store name must be in format: fileSearchStores/store-id',
+            },
+          },
+        ],
+      },
+    ],
   },
   {
     displayName: 'Metadata Filter',

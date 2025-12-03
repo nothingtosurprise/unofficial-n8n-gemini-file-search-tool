@@ -34,13 +34,13 @@ describe('Document Query Operation', () => {
   });
 
   describe('Basic Query', () => {
-    it('should query single store with Gemini 2.5 Flash', async () => {
+    it('should query store with Gemini 2.5 Flash', async () => {
       // Arrange
       mockGetNodeParameter
         .mockReturnValueOnce('gemini-2.5-flash') // model
         .mockReturnValueOnce('') // systemPrompt
         .mockReturnValueOnce('What are the key findings?') // query
-        .mockReturnValueOnce('fileSearchStores/store-1') // storeNames
+        .mockReturnValueOnce('fileSearchStores/store-1') // storeName
         .mockReturnValueOnce('') // metadataFilter
         .mockReturnValueOnce(false); // includeSourceMetadata
 
@@ -83,64 +83,6 @@ describe('Document Query Operation', () => {
       );
       expect(result).toEqual(mockResponse);
     });
-
-    it('should query multiple stores', async () => {
-      // Arrange
-      mockGetNodeParameter
-        .mockReturnValueOnce('gemini-2.5-pro') // model
-        .mockReturnValueOnce('') // systemPrompt
-        .mockReturnValueOnce('Summarize all documents') // query
-        .mockReturnValueOnce('fileSearchStores/store-1,fileSearchStores/store-2') // storeNames
-        .mockReturnValueOnce('') // metadataFilter
-        .mockReturnValueOnce(false); // includeSourceMetadata
-
-      (apiClient.geminiApiRequest as jest.Mock).mockResolvedValue({ candidates: [] });
-
-      // Act
-      await query.call(mockExecuteFunctions as IExecuteFunctions, 0);
-
-      // Assert
-      expect(apiClient.geminiApiRequest).toHaveBeenCalledWith(
-        'POST',
-        '/models/gemini-2.5-pro:generateContent',
-        expect.objectContaining({
-          tools: [
-            {
-              fileSearch: {
-                fileSearchStoreNames: ['fileSearchStores/store-1', 'fileSearchStores/store-2'],
-              },
-            },
-          ],
-        }),
-      );
-    });
-
-    it('should handle store names with spaces', async () => {
-      // Arrange
-      mockGetNodeParameter
-        .mockReturnValueOnce('gemini-2.5-flash') // model
-        .mockReturnValueOnce('') // systemPrompt
-        .mockReturnValueOnce('Query text') // query
-        .mockReturnValueOnce(
-          'fileSearchStores/store-1, fileSearchStores/store-2, fileSearchStores/store-3',
-        ) // storeNames
-        .mockReturnValueOnce('') // metadataFilter
-        .mockReturnValueOnce(false); // includeSourceMetadata
-
-      (apiClient.geminiApiRequest as jest.Mock).mockResolvedValue({ candidates: [] });
-
-      // Act
-      await query.call(mockExecuteFunctions as IExecuteFunctions, 0);
-
-      // Assert
-      const call = (apiClient.geminiApiRequest as jest.Mock).mock.calls[0];
-      const storeNames = call[2].tools[0].fileSearch.fileSearchStoreNames;
-      expect(storeNames).toEqual([
-        'fileSearchStores/store-1',
-        'fileSearchStores/store-2',
-        'fileSearchStores/store-3',
-      ]);
-    });
   });
 
   describe('Metadata Filtering', () => {
@@ -150,7 +92,7 @@ describe('Document Query Operation', () => {
         .mockReturnValueOnce('gemini-2.5-flash') // model
         .mockReturnValueOnce('') // systemPrompt
         .mockReturnValueOnce('Find documents') // query
-        .mockReturnValueOnce('fileSearchStores/store-1') // storeNames
+        .mockReturnValueOnce('fileSearchStores/store-1') // storeName
         .mockReturnValueOnce('author="John Doe" AND year>=2023') // metadataFilter
         .mockReturnValueOnce(false); // includeSourceMetadata
 
@@ -183,7 +125,7 @@ describe('Document Query Operation', () => {
         .mockReturnValueOnce('gemini-2.5-flash') // model
         .mockReturnValueOnce('') // systemPrompt
         .mockReturnValueOnce('Query') // query
-        .mockReturnValueOnce('fileSearchStores/store-1') // storeNames
+        .mockReturnValueOnce('fileSearchStores/store-1') // storeName
         .mockReturnValueOnce('') // metadataFilter
         .mockReturnValueOnce(false); // includeSourceMetadata
 
@@ -206,7 +148,7 @@ describe('Document Query Operation', () => {
         .mockReturnValueOnce('gemini-2.5-pro') // model
         .mockReturnValueOnce('') // systemPrompt
         .mockReturnValueOnce('Query') // query
-        .mockReturnValueOnce('fileSearchStores/store-1') // storeNames
+        .mockReturnValueOnce('fileSearchStores/store-1') // storeName
         .mockReturnValueOnce('') // metadataFilter
         .mockReturnValueOnce(false); // includeSourceMetadata
 
@@ -229,7 +171,7 @@ describe('Document Query Operation', () => {
         .mockReturnValueOnce('gemini-3-pro-preview') // model
         .mockReturnValueOnce('') // systemPrompt
         .mockReturnValueOnce('Query') // query
-        .mockReturnValueOnce('fileSearchStores/store-1') // storeNames
+        .mockReturnValueOnce('fileSearchStores/store-1') // storeName
         .mockReturnValueOnce('') // metadataFilter
         .mockReturnValueOnce(false); // includeSourceMetadata
 
@@ -254,7 +196,7 @@ describe('Document Query Operation', () => {
         .mockReturnValueOnce('gemini-2.5-flash') // model
         .mockReturnValueOnce('') // systemPrompt
         .mockReturnValueOnce('Query') // query
-        .mockReturnValueOnce('fileSearchStores/store-1') // storeNames
+        .mockReturnValueOnce('fileSearchStores/store-1') // storeName
         .mockReturnValueOnce('') // metadataFilter
         .mockReturnValueOnce(false); // includeSourceMetadata
 
@@ -294,7 +236,7 @@ describe('Document Query Operation', () => {
         .mockReturnValueOnce('gemini-2.5-flash') // model
         .mockReturnValueOnce('') // systemPrompt
         .mockReturnValueOnce('Query') // query
-        .mockReturnValueOnce('fileSearchStores/store-1') // storeNames
+        .mockReturnValueOnce('fileSearchStores/store-1') // storeName
         .mockReturnValueOnce('') // metadataFilter
         .mockReturnValueOnce(false); // includeSourceMetadata
 

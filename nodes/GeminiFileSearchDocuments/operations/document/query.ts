@@ -116,9 +116,9 @@ export async function query(this: IExecuteFunctions, index: number): Promise<Que
   const model = this.getNodeParameter('model', index) as string;
   const systemPrompt = this.getNodeParameter('systemPrompt', index, '') as string;
   const queryText = this.getNodeParameter('query', index) as string;
-  const storeNamesParam = this.getNodeParameter('storeNames', index, [], {
+  const storeName = this.getNodeParameter('storeName', index, '', {
     extractValue: true,
-  }) as string | string[];
+  }) as string;
   const metadataFilter = this.getNodeParameter('metadataFilter', index, '') as string;
   const includeSourceMetadata = this.getNodeParameter(
     'includeSourceMetadata',
@@ -126,10 +126,8 @@ export async function query(this: IExecuteFunctions, index: number): Promise<Que
     false,
   ) as boolean;
 
-  // Handle both array (from multiOptions) and string (from expression) inputs
-  const storeNames = Array.isArray(storeNamesParam)
-    ? storeNamesParam
-    : storeNamesParam.split(',').map((s) => s.trim());
+  // Wrap single store in array for API compatibility
+  const storeNames = [storeName];
 
   if (metadataFilter) {
     validateMetadataFilter.call(this, metadataFilter);

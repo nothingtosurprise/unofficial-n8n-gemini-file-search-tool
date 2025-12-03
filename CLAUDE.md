@@ -405,6 +405,7 @@ git push                   # Push to remote
 8. **ALWAYS** save reports to correct locations
 9. **ALWAYS** verify build succeeds
 10. **ALWAYS** maintain >80% test coverage
+11. **ALWAYS** user must approve push to remote repo and npmjs
 
 ---
 

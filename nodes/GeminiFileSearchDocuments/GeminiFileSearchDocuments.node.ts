@@ -4,7 +4,6 @@ import {
   INodeExecutionData,
   INodeListSearchItems,
   INodeListSearchResult,
-  INodePropertyOptions,
   INodeType,
   INodeTypeDescription,
 } from 'n8n-workflow';
@@ -55,7 +54,7 @@ export class GeminiFileSearchDocuments implements INodeType {
   };
 
   methods = {
-    // listSearch is used by resourceLocator fields (upload, import, list, replaceUpload operations)
+    // listSearch is used by resourceLocator fields for store selection
     listSearch: {
       async getStores(
         this: ILoadOptionsFunctions,
@@ -84,23 +83,6 @@ export class GeminiFileSearchDocuments implements INodeType {
         }
 
         return { results };
-      },
-    },
-    // loadOptions is used by multiOptions field (Query operation's storeNames)
-    loadOptions: {
-      async getStores(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-        const stores = (await geminiApiRequestAllItems.call(
-          this,
-          'fileSearchStores',
-          'GET',
-          '/fileSearchStores',
-        )) as FileSearchStore[];
-
-        return stores.map((store) => ({
-          name: store.displayName || store.name.split('/').pop() || store.name,
-          value: store.name,
-          description: `Created: ${new Date(store.createTime).toLocaleDateString()}`,
-        }));
       },
     },
   };
